@@ -5,6 +5,19 @@ import type { SyncTarget } from "./interfaces";
  * Files live under `data/federal/<slug>.json` or `data/provincial/<slug>.json`.
  */
 export const DEFAULTS: Record<string, SyncTarget> = {
+  mp: {
+    gov_level: "federal",
+    slug: "mp",
+    currentUrl:
+      "https://www.youcount.ca/representatives?elected_office=MP&limit=1000",
+    opennorthUrl: "",
+    elected_office: "MP",
+    province: "All",
+    enabled: true,
+    diffFields: {
+      secondary: ["province", "party_name"],
+    },
+  },
   senator: {
     gov_level: "federal",
     slug: "senator",
