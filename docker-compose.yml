@@ -1,0 +1,13 @@
+services:
+  scrapers:
+    image: scrapers:latest
+    container_name: scrapers
+    build: .
+    environment:
+      DATA_DIR: /data
+      PORT: "3101"
+    ports:
+      - "3101:3101"
+    volumes:
+      - ./data:/data
+    restart: unless-stopped

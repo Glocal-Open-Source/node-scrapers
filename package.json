@@ -1,0 +1,26 @@
+{
+  "name": "@yc/scrapers",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "scrape": "tsx src/runOnce.ts",
+    "scrape:prod": "node dist/runOnce.js",
+    "scrape:all": "tsx src/runAll.ts",
+    "scrape:all:prod": "node dist/runAll.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "node-html-parser": "^6.1.13"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
