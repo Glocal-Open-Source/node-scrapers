@@ -1,5 +1,5 @@
-/** Stored under `data/federal/` or `data/provincial/` (same string values). */
-export type GovLevel = "federal" | "provincial";
+/** Stored under `data/federal/`, `data/provincial/`, or `data/municipal/`. */
+export type GovLevel = "federal" | "provincial" | "municipal";
 
 export interface SyncTarget {
   gov_level: GovLevel;

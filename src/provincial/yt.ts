@@ -10,7 +10,7 @@ const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 // yukonassembly.ca blocks Node.js's TLS fingerprint; curl (Windows SChannel) passes.
-async function curlGet(url: string): Promise<string> {
+async function ytGet(url: string): Promise<string> {
   const { stdout } = await execFileAsync("curl", ["-s", "-A", UA, url]);
   return stdout;
 }
@@ -40,8 +40,8 @@ function normalizeName(name: string): string {
 /** Yukon MLAs */
 export async function scrapeYtMla(): Promise<Rep[]> {
   const [listHtml, csvText] = await Promise.all([
-    curlGet("https://yukonassembly.ca/mlas"),
-    curlGet("https://yukonassembly.ca/export-mla-list"),
+    ytGet("https://yukonassembly.ca/mlas"),
+    ytGet("https://yukonassembly.ca/export-mla-list"),
   ]);
 
   // CSV columns: Title, District, Party, Phone, Fax, Email
@@ -99,6 +99,12 @@ export async function scrapeYtMla(): Promise<Rep[]> {
         ? [{ title: "Official Website", url: detailUrl }]
         : undefined,
     });
+  }
+
+  if (reps.length === 0) {
+    throw new Error(
+      "scrapeYtMla: 0 reps parsed — site may have blocked the request or changed its HTML structure",
+    );
   }
 
   return reps;

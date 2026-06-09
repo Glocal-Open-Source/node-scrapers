@@ -1,3 +1,4 @@
+import { municipalTargets } from "./municipal";
 import type { SyncTarget } from "./interfaces";
 
 /**
@@ -5,6 +6,7 @@ import type { SyncTarget } from "./interfaces";
  * Files live under `data/federal/<slug>.json` or `data/provincial/<slug>.json`.
  */
 export const DEFAULTS: Record<string, SyncTarget> = {
+  ...municipalTargets,
   mp: {
     gov_level: "federal",
     slug: "mp",

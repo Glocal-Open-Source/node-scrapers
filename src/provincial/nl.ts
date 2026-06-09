@@ -43,16 +43,16 @@ export async function scrapeNlMha(): Promise<Rep[]> {
   }>;
 
   const processItem = async (item: (typeof listArr)[0]): Promise<Rep | undefined> => {
-    const nameMatch = item.name.match(/--(.*?)--/);
-    const nameContent = nameMatch?.[1];
-    if (!nameContent || nameContent === "Vacant") return undefined;
+    const anchorMatch = item.name.match(/<a href="([^"]+)">([^<]+)<\/a>/);
+    if (!anchorMatch) return undefined;
+    const [, href, nameContent] = anchorMatch;
+    if (nameContent.trim() === "Vacant") return undefined;
 
     const nameArr = nameContent.split(",");
     const last_name = nameArr[0]?.trim() ?? "";
     const first_name = nameArr[1]?.trim() ?? "";
     let name = `${first_name} ${last_name}`.trim();
-    const urlMatch = item.name.match(/<a href='(.*?)'>/);
-    const url = urlMatch ? `https://www.assembly.nl.ca${urlMatch[1]}` : "";
+    const url = `https://www.assembly.nl.ca${href}`;
     let district_name = item.district;
     let party_name = item.party;
     const emailMatch = item.email?.match(/mailto:([^"']+)/);

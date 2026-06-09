@@ -1,6 +1,7 @@
 import type { Rep } from "./interfaces";
 import { scrapeMps } from "./federal/mp";
 import { scrapeSenators } from "./federal/senator";
+import { municipalRegistry } from "./municipal";
 import { scrapeAbMla } from "./provincial/ab";
 import { scrapeBcMla } from "./provincial/bc";
 import { scrapeMbMla } from "./provincial/mb";
@@ -32,4 +33,5 @@ export const registry: Record<string, () => Promise<Rep[]>> = {
   qc: scrapeQcMna,
   sk: scrapeSkMla,
   yt: scrapeYtMla,
+  ...municipalRegistry,
 };
