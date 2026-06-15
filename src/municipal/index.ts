@@ -1,13 +1,14 @@
 import type { Rep } from "../interfaces";
 import type { SyncTarget } from "../interfaces";
 import { createOpenNorthScraper } from "../provincial/opennorth";
+import { getBoundaryConfig, isMayorOffice, type WardRep } from "./boundaries";
 
 const BASE = "https://scrapers.herokuapp.com/represent/";
 
 const SETS: { slug: string; herokSlug: string; province: string }[] = [
   // Alberta
-  { slug: "calgary-city-council", herokSlug: "ca_ab_calgary", province: "Alberta" },
-  { slug: "county-of-grande-prairie-no-1-council", herokSlug: "ca_ab_grande_prairie_county_no_1", province: "Alberta" },
+  { slug: "calgary-city-council", herokSlug: "ca_ab_calgary", province: "Alberta"},
+  { slug: "county-of-grande-prairie-no-1-council", herokSlug: "ca_ab_grande_prairie_county_no_1", province: "Alberta"},
   { slug: "edmonton-city-council", herokSlug: "ca_ab_edmonton", province: "Alberta" },
   { slug: "grande-prairie-city-council", herokSlug: "ca_ab_grande_prairie", province: "Alberta" },
   { slug: "lethbridge-city-council", herokSlug: "ca_ab_lethbridge", province: "Alberta" },
@@ -125,11 +126,30 @@ const SETS: { slug: string; herokSlug: string; province: string }[] = [
   { slug: "saskatoon-city-council", herokSlug: "ca_sk_saskatoon", province: "Saskatchewan" },
 ];
 
+function withBoundaries(
+  slug: string,
+  scraper: () => Promise<Rep[]>,
+): () => Promise<Rep[]> {
+  const config = getBoundaryConfig(slug);
+  return async () => {
+    const reps = await scraper();
+    return reps.map((rep) => {
+      const raw = rep as unknown as WardRep;
+      const boundary = config.getBoundary
+        ? config.getBoundary(raw)
+        : isMayorOffice(rep.elected_office)
+          ? config.mayor || null
+          : config.ward(raw);
+      return boundary ? { ...rep, boundary } : rep;
+    });
+  };
+}
+
 export const municipalRegistry: Record<string, () => Promise<Rep[]>> =
   Object.fromEntries(
     SETS.map(({ slug, herokSlug }) => [
       slug,
-      createOpenNorthScraper(`${BASE}${herokSlug}/`),
+      withBoundaries(slug, createOpenNorthScraper(`${BASE}${herokSlug}/`)),
     ]),
   );
 

@@ -36,6 +36,7 @@ export interface Rep {
   last_name: string;
   first_name: string;
   district_name: string;
+  district_id?: string;
   province: string;
   party_name: string;
   related?: { boundary_url?: string };
