@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp src/boundaries/data.json dist/boundaries/data.json",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
     "scrape": "tsx src/runOnce.ts",
