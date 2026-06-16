@@ -5,7 +5,7 @@ import { DEFAULTS } from "./constants";
 import { env } from "./env";
 import type { GovLevel, SyncTarget } from "./interfaces";
 import {
-  readMunicipalAggregateDiff,
+  MUNICIPAL_YOUCOUNT_SOURCE,
   refreshMunicipalAggregateDiff,
 } from "./municipal/diff";
 import { normalizeSlug } from "./slug";
@@ -110,72 +110,77 @@ app.get("/diff", async (_req, res) => {
     const generatedAt = new Date().toISOString();
     const targets = Object.values(DEFAULTS);
     const scrapers = await Promise.all(
-      targets.map(async (t) => {
-        const run = await getStoredRun(t.gov_level, t.slug);
-        if (!run) {
+      targets
+        .filter((t) => t.gov_level !== "municipal")
+        .map(async (t) => {
+          const currentSource = t.currentUrl.trim() || t.opennorthUrl;
+          const run = await getStoredRun(t.gov_level, t.slug);
+          if (!run) {
+            return {
+              gov_level: t.gov_level,
+              slug: t.slug,
+              status: "missing" as const,
+              finishedAt: null as string | null,
+              currentSource,
+              diff: null,
+              diffError: null,
+            };
+          }
+          if (run.status === "error") {
+            return {
+              gov_level: t.gov_level,
+              slug: t.slug,
+              status: "error" as const,
+              finishedAt: run.finishedAt,
+              currentSource: run.currentSource ?? currentSource,
+              diff: null,
+              diffError: run.diffError ?? null,
+            };
+          }
           return {
             gov_level: t.gov_level,
             slug: t.slug,
-            status: "missing" as const,
-            finishedAt: null as string | null,
-            currentSource: t.currentUrl,
-            diff: null,
-            diffError: null,
-          };
-        }
-        if (run.status === "error") {
-          return {
-            gov_level: t.gov_level,
-            slug: t.slug,
-            status: "error" as const,
+            status: "success" as const,
             finishedAt: run.finishedAt,
-            currentSource: run.currentSource ?? t.currentUrl,
-            diff: null,
+            currentSource: run.currentSource ?? currentSource,
+            diff: run.diff ?? null,
             diffError: run.diffError ?? null,
           };
-        }
-        return {
-          gov_level: t.gov_level,
-          slug: t.slug,
-          status: "success" as const,
-          finishedAt: run.finishedAt,
-          currentSource: run.currentSource ?? t.currentUrl,
-          diff: run.diff ?? null,
-          diffError: run.diffError ?? null,
-        };
-      }),
+        }),
     );
-    let municipal = await readMunicipalAggregateDiff();
-    if (!municipal) {
-      try {
-        municipal = await refreshMunicipalAggregateDiff();
-      } catch (err) {
-        console.error("[scrapers] GET /diff municipal aggregate", err);
-        municipal = {
-          generatedAt: new Date().toISOString(),
-          scope: { councils: 0 },
-          mayors: {
-            status: "error",
-            scrapeCount: 0,
-            youcountCount: 0,
-            councilsQueried: 0,
-            currentSource: "",
-            diff: null,
-            diffError:
-              err instanceof Error ? err.message : "Failed to compute municipal diff",
-          },
-          councillors: {
-            status: "error",
-            scrapeCount: 0,
-            youcountCount: 0,
-            councilsQueried: 0,
-            currentSource: "",
-            diff: null,
-            diffError:
-              err instanceof Error ? err.message : "Failed to compute municipal diff",
-          },
-        };
-      }
+
+    let municipal;
+    try {
+      municipal = await refreshMunicipalAggregateDiff();
+    } catch (err) {
+      console.error("[scrapers] GET /diff municipal aggregate", err);
+      const message =
+        err instanceof Error ? err.message : "Failed to compute municipal diff";
+      municipal = {
+        generatedAt: new Date().toISOString(),
+        scope: { councils: 0, councilsWithData: 0, councilsQueried: 0 },
+        currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
+        combined: null,
+        councils: [],
+        mayors: {
+          status: "error",
+          scrapeCount: 0,
+          youcountCount: 0,
+          councilsQueried: 0,
+          currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
+          diff: null,
+          diffError: message,
+        },
+        councillors: {
+          status: "error",
+          scrapeCount: 0,
+          youcountCount: 0,
+          councilsQueried: 0,
+          currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
+          diff: null,
+          diffError: message,
+        },
+      };
     }
 
     res.json({ generatedAt, scrapers, municipal });

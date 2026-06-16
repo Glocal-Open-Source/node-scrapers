@@ -21,12 +21,31 @@ export type MunicipalRoleDiff = {
   diffError: string | null;
 };
 
+export type MunicipalCouncilStatus = {
+  slug: string;
+  status: "success" | "error" | "missing";
+  finishedAt: string | null;
+  scrapeCount: number;
+  diffError: string | null;
+};
+
 export type MunicipalAggregateDiff = {
   generatedAt: string;
-  scope: { councils: number };
+  scope: {
+    councils: number;
+    councilsWithData: number;
+    councilsQueried: number;
+  };
+  currentSource: string;
+  /** All 108 councils: scraped reps vs YouCount (mayors + councillors). */
+  combined: RepDiff | null;
   mayors: MunicipalRoleDiff;
   councillors: MunicipalRoleDiff;
+  councils: MunicipalCouncilStatus[];
 };
+
+export const MUNICIPAL_YOUCOUNT_SOURCE =
+  `${YOUCOUNT_BASE}?province=<province>&district_name=<city>&elected_office=Mayor|Councillor|Conseiller`;
 
 type TaggedRep = Rep & { council: string };
 
@@ -143,8 +162,64 @@ function computeRoleDiff(
   });
 }
 
+function mergeDiffs(diffs: RepDiff[]): RepDiff | null {
+  if (diffs.length === 0) return null;
+  const added = diffs.flatMap((d) => d.added);
+  const deleted = diffs.flatMap((d) => d.deleted);
+  const changed = diffs.flatMap((d) => d.changed);
+  return {
+    added,
+    deleted,
+    changed,
+    counts: {
+      added: added.length,
+      deleted: deleted.length,
+      changed: changed.length,
+    },
+    primaryFields: [...diffs[0]!.primaryFields],
+    secondaryFields: [...diffs[0]!.secondaryFields],
+    date: new Date().toISOString(),
+  };
+}
+
+async function loadCouncilStatuses(): Promise<MunicipalCouncilStatus[]> {
+  return Promise.all(
+    Object.values(municipalTargets).map(async (target) => {
+      const run = await getStoredRun("municipal", target.slug);
+      if (!run) {
+        return {
+          slug: target.slug,
+          status: "missing" as const,
+          finishedAt: null,
+          scrapeCount: 0,
+          diffError: null,
+        };
+      }
+      if (run.status === "error") {
+        return {
+          slug: target.slug,
+          status: "error" as const,
+          finishedAt: run.finishedAt,
+          scrapeCount: 0,
+          diffError: run.error,
+        };
+      }
+      return {
+        slug: target.slug,
+        status: "success" as const,
+        finishedAt: run.finishedAt,
+        scrapeCount: run.count ?? run.data?.length ?? 0,
+        diffError: run.diffError ?? null,
+      };
+    }),
+  );
+}
+
 export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregateDiff> {
-  const scrapedByCouncil = await loadScrapedByCouncil();
+  const [scrapedByCouncil, councils] = await Promise.all([
+    loadScrapedByCouncil(),
+    loadCouncilStatuses(),
+  ]);
   const scrapeMayors: TaggedRep[] = [];
   const scrapeCouncillors: TaggedRep[] = [];
   const youcountMayors: TaggedRep[] = [];
@@ -174,9 +249,6 @@ export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregat
     }
   }
 
-  const currentSource =
-    `${YOUCOUNT_BASE}?province=<province>&district_name=<city>&elected_office=Mayor|Councillor|Conseiller`;
-
   const buildRole = (
     scrapeReps: TaggedRep[],
     youcountReps: TaggedRep[],
@@ -187,7 +259,7 @@ export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregat
         scrapeCount: 0,
         youcountCount: 0,
         councilsQueried: 0,
-        currentSource,
+        currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
         diff: null,
         diffError: "No municipal scrape data on disk yet",
       };
@@ -198,7 +270,7 @@ export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregat
         scrapeCount: scrapeReps.length,
         youcountCount: 0,
         councilsQueried,
-        currentSource,
+        currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
         diff: null,
         diffError: fetchError,
       };
@@ -208,17 +280,30 @@ export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregat
       scrapeCount: scrapeReps.length,
       youcountCount: youcountReps.length,
       councilsQueried,
-      currentSource,
+      currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
       diff: computeRoleDiff(scrapeReps, youcountReps),
       diffError: fetchError,
     };
   };
 
+  const mayors = buildRole(scrapeMayors, youcountMayors);
+  const councillors = buildRole(scrapeCouncillors, youcountCouncillors);
+  const roleDiffs = [mayors.diff, councillors.diff].filter(
+    (d): d is RepDiff => d != null,
+  );
+
   return {
     generatedAt: new Date().toISOString(),
-    scope: { councils: Object.keys(municipalTargets).length },
-    mayors: buildRole(scrapeMayors, youcountMayors),
-    councillors: buildRole(scrapeCouncillors, youcountCouncillors),
+    scope: {
+      councils: Object.keys(municipalTargets).length,
+      councilsWithData: scrapedByCouncil.size,
+      councilsQueried,
+    },
+    currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
+    combined: mergeDiffs(roleDiffs),
+    mayors,
+    councillors,
+    councils,
   };
 }
 

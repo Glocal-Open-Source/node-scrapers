@@ -19,22 +19,25 @@ export async function runOne(target: SyncTarget): Promise<void> {
 
     let diff: RepDiff | null = null;
     let diffError: string | null = null;
-    try {
-      const { data } = await http.get<{ objects?: Rep[] }>(target.currentUrl);
-      const currentReps = data?.objects ?? [];
-      diff = getDiff({
-        currentReps,
-        latestReps: reps,
-        primaryFields: target.diffFields?.primary,
-        secondaryFields: target.diffFields?.secondary,
-      });
-    } catch (e) {
-      diffError = e instanceof Error ? e.message : String(e);
-      console.warn(`[${govLevel}/${slug}] YouCount diff failed:`, diffError);
+    const currentUrl = target.currentUrl.trim();
+    if (currentUrl) {
+      try {
+        const { data } = await http.get<{ objects?: Rep[] }>(currentUrl);
+        const currentReps = data?.objects ?? [];
+        diff = getDiff({
+          currentReps,
+          latestReps: reps,
+          primaryFields: target.diffFields?.primary,
+          secondaryFields: target.diffFields?.secondary,
+        });
+      } catch (e) {
+        diffError = e instanceof Error ? e.message : String(e);
+        console.warn(`[${govLevel}/${slug}] YouCount diff failed:`, diffError);
+      }
     }
 
     await writeRunSuccess(govLevel, slug, startedAt, finishedAt, reps, {
-      currentSource: target.currentUrl,
+      currentSource: currentUrl || target.opennorthUrl,
       diff,
       diffError,
     });
