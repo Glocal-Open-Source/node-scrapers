@@ -1,3 +1,5 @@
+import { lookupBoundary } from ".";
+
 export interface WardRep {
   elected_office?: string;
   district_name: string;
@@ -12,9 +14,8 @@ export interface BoundaryConfig {
   getBoundary?: (rep: WardRep) => string | null;
 }
 
-function wardById(prefix: string) {
-  return (rep: WardRep) =>
-    rep.district_id ? `${prefix}/ward-${rep.district_id}` : null;
+function wardByName(boundarySet: string) {
+  return (rep: WardRep): string | null => lookupBoundary(boundarySet, rep.district_name);
 }
 
 function wardFromBoundaryUrl(rep: WardRep): string | null {
@@ -22,41 +23,37 @@ function wardFromBoundaryUrl(rep: WardRep): string | null {
   return m ? m[1] : null;
 }
 
-export const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>> = {
+const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>> = {
+  // Alberta
   "calgary-city-council": {
     mayor: "census-subdivisions/4806016",
-    ward: (rep) => rep.district_id ? `alberta-calgary-wards/ward-${rep.district_id}` : null,
+    ward: wardByName("alberta-calgary-wards"),
   },
-
+  "county-of-grande-prairie-no-1-council": {
+    mayor: "census-subdivisions/4819006",
+    ward: wardByName("grande-prairie-county-no-1-divisions"),
+  },
   "edmonton-city-council": {
     mayor: "census-subdivisions/4811061",
-    ward: (rep) => {
-      const slug = rep.district_name
-        .normalize("NFD").replace(/[̀-ͯ]/g, "")
-        .toLowerCase()
-        .replace(/['']/g, "")
-        .replace(/\s+/g, "-")
-        .replace(/[^a-z0-9-]/g, "")
-        .replace(/-+/g, "-");
-      return `alberta-edmonton-wards/${slug}`;
-    },
+    ward: wardByName("alberta-edmonton-wards"),
   },
   "grande-prairie-city-council": {
     mayor: "census-subdivisions/4819012",
-    ward: () => "census-subdivisions/4819012",
+    ward: () => null,
   },
   "lethbridge-city-council": {
     mayor: "census-subdivisions/4802012",
-    ward: () => "census-subdivisions/4802012",
+    ward: () => null,
   },
   "strathcona-county-council": {
     mayor: "census-subdivisions/4811052",
-    ward: wardById("alberta-strathcona-county-wards"),
+    ward: wardByName("strathcona-county-wards"),
   },
   "wood-buffalo-municipal-council": {
     mayor: "census-subdivisions/4816037",
-    ward: wardById("alberta-wood-buffalo-wards"),
+    ward: wardByName("alberta-wood-buffalo-wards"),
   },
+  // British Columbia
   "abbotsford-city-council": {
     mayor: "census-subdivisions/5909052",
     ward: () => null,
@@ -105,73 +102,78 @@ export const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>
     mayor: "census-subdivisions/5917034",
     ward: () => null,
   },
+  // Manitoba
   "winnipeg-city-council": {
     mayor: "census-subdivisions/4611040",
-    ward: () => null,
+    ward: wardByName("winnipeg-wards"),
   },
+  // New Brunswick
   "fredericton-city-council": {
     mayor: "census-subdivisions/1310032",
-    ward: wardById("fredericton-wards"),
+    ward: wardByName("fredericton-wards"),
   },
   "moncton-city-council": {
     mayor: "census-subdivisions/1307022",
-    ward: wardById("moncton-wards"),
+    ward: wardByName("moncton-wards"),
   },
   "saint-john-city-council": {
     mayor: "census-subdivisions/1301006",
-    ward: wardById("saint-john-wards"),
+    ward: wardByName("saint-john-wards"),
   },
+  // Newfoundland and Labrador
   "st-johns-city-council": {
     mayor: "census-subdivisions/1001519",
-    ward: wardById("st-johns-wards"),
+    ward: wardByName("st-johns-wards"),
   },
+  // Nova Scotia
   "cape-breton-regional-council": {
     mayor: "census-subdivisions/1217030",
-    ward: wardById("cape-breton-wards"),
+    ward: wardByName("cape-breton-districts"),
   },
   "halifax-regional-council": {
     mayor: "census-subdivisions/1209034",
-    ward: () => null,
+    ward: wardByName("nova-scotia-halifax-wards"),
   },
+  // Ontario
   "ajax-town-council": {
     mayor: "census-subdivisions/3518005",
-    ward: wardById("ajax-wards"),
+    ward: wardByName("ajax-wards"),
   },
   "belleville-city-council": {
     mayor: "census-subdivisions/3512005",
-    ward: wardById("belleville-wards"),
-  },
-  "brampton-city-council": {
-    mayor: "census-subdivisions/3521010",
-    ward: wardById("brampton-wards"),
+    ward: () => null,
   },
   "brantford-city-council": {
     mayor: "census-subdivisions/3529006",
-    ward: wardById("brantford-wards"),
+    ward: wardByName("brantford-wards"),
+  },
+  "brampton-city-council": {
+    mayor: "census-subdivisions/3521010",
+    ward: wardByName("brampton-wards"),
   },
   "burlington-city-council": {
     mayor: "census-subdivisions/3524002",
-    ward: wardById("burlington-wards"),
+    ward: wardByName("burlington-wards"),
   },
   "caledon-town-council": {
     mayor: "census-subdivisions/3521024",
-    ward: wardById("caledon-wards"),
+    ward: wardByName("caledon-wards"),
   },
   "cambridge-city-council": {
     mayor: "census-subdivisions/3530010",
-    ward: wardById("cambridge-wards"),
+    ward: wardByName("cambridge-wards"),
   },
   "chatham-kent-municipal-council": {
     mayor: "census-subdivisions/3536020",
-    ward: wardById("chatham-kent-wards"),
+    ward: wardByName("chatham-kent-wards"),
   },
   "clarington-municipal-council": {
     mayor: "census-subdivisions/3518017",
-    ward: wardById("clarington-wards"),
+    ward: () => null,
   },
   "fort-erie-town-council": {
     mayor: "census-subdivisions/3526003",
-    ward: wardById("fort-erie-wards"),
+    ward: wardByName("fort-erie-wards"),
   },
   "georgina-town-council": {
     mayor: "census-subdivisions/3519070",
@@ -179,23 +181,23 @@ export const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>
   },
   "greater-sudbury-city-council": {
     mayor: "census-subdivisions/3553005",
-    ward: wardById("greater-sudbury-wards"),
+    ward: wardByName("greater-sudbury-wards"),
   },
   "grimsby-town-council": {
     mayor: "census-subdivisions/3526065",
-    ward: wardById("grimsby-wards"),
+    ward: wardByName("grimsby-wards"),
   },
   "guelph-city-council": {
     mayor: "census-subdivisions/3523008",
-    ward: wardById("guelph-wards"),
+    ward: wardByName("guelph-wards"),
   },
   "haldimand-county-council": {
     mayor: "census-subdivisions/3528018",
-    ward: wardById("haldimand-county-wards"),
+    ward: wardByName("haldimand-county-wards"),
   },
   "hamilton-city-council": {
     mayor: "census-subdivisions/3525005",
-    ward: wardById("hamilton-wards"),
+    ward: wardByName("hamilton-wards"),
   },
   "huron-county-council": {
     mayor: "",
@@ -203,19 +205,19 @@ export const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>
   },
   "kawartha-lakes-city-council": {
     mayor: "census-subdivisions/3516010",
-    ward: wardById("kawartha-lakes-wards"),
+    ward: () => null,
   },
   "king-township-council": {
     mayor: "census-subdivisions/3519049",
-    ward: wardById("king-wards"),
+    ward: wardByName("king-wards"),
   },
   "kingston-city-council": {
     mayor: "census-subdivisions/3510010",
-    ward: () => null,
+    ward: wardByName("kingston-wards"),
   },
   "kitchener-city-council": {
     mayor: "census-subdivisions/3530013",
-    ward: wardById("kitchener-wards"),
+    ward: wardByName("kitchener-wards"),
   },
   "lambton-county-council": {
     mayor: "",
@@ -227,27 +229,27 @@ export const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>
   },
   "lincoln-town-council": {
     mayor: "census-subdivisions/3526057",
-    ward: wardById("lincoln-wards"),
+    ward: wardByName("lincoln-wards"),
   },
   "london-city-council": {
     mayor: "census-subdivisions/3539036",
-    ward: wardById("london-wards"),
+    ward: wardByName("london-wards"),
   },
   "markham-city-council": {
     mayor: "census-subdivisions/3519036",
-    ward: wardById("markham-wards"),
+    ward: wardByName("markham-wards"),
   },
   "milton-town-council": {
     mayor: "census-subdivisions/3524009",
-    ward: wardById("milton-wards"),
+    ward: wardByName("milton-wards"),
   },
   "mississauga-city-council": {
     mayor: "census-subdivisions/3521005",
-    ward: wardById("mississauga-wards"),
+    ward: wardByName("mississauga-wards"),
   },
   "newmarket-town-council": {
     mayor: "census-subdivisions/3519048",
-    ward: wardById("newmarket-wards"),
+    ward: wardByName("newmarket-wards"),
   },
   "niagara-on-the-lake-town-council": {
     mayor: "census-subdivisions/3526047",
@@ -259,19 +261,19 @@ export const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>
   },
   "north-dumfries-township-council": {
     mayor: "census-subdivisions/3530004",
-    ward: wardById("north-dumfries-wards"),
+    ward: wardByName("north-dumfries-wards"),
   },
   "oakville-town-council": {
     mayor: "census-subdivisions/3524001",
-    ward: wardById("oakville-wards"),
+    ward: wardByName("oakville-wards"),
   },
   "oshawa-city-council": {
     mayor: "census-subdivisions/3518013",
-    ward: wardById("oshawa-wards"),
+    ward: wardByName("oshawa-wards"),
   },
   "ottawa-city-council": {
     mayor: "census-subdivisions/3506008",
-    ward: () => null,
+    ward: wardByName("ottawa-wards"),
   },
   "peel-regional-council": {
     mayor: "",
@@ -280,42 +282,39 @@ export const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>
   },
   "pickering-city-council": {
     mayor: "census-subdivisions/3518001",
-    ward: wardById("pickering-wards"),
+    ward: wardByName("pickering-wards"),
   },
   "richmond-hill-town-council": {
     mayor: "census-subdivisions/3519038",
-    ward: wardById("richmond-hill-wards"),
+    ward: () => null,
   },
   "sault-ste-marie-city-council": {
     mayor: "census-subdivisions/3557061",
-    ward: wardById("sault-ste-marie-wards"),
+    ward: () => null,
   },
   "st-catharines-city-council": {
     mayor: "census-subdivisions/3526053",
-    ward: () => null,
+    ward: wardByName("st-catharines-wards"),
   },
   "thunder-bay-city-council": {
     mayor: "census-subdivisions/3558004",
-    ward: () => null,
+    ward: wardByName("thunder-bay-wards"),
   },
   "toronto-city-council": {
     mayor: "census-subdivisions/3520005",
-    ward: (rep) => {
-      const m = rep.personal_url?.match(/councillor-ward-(\d+)/);
-      return m ? `toronto-municipal/ward-${m[1]}` : null;
-    },
+    ward: wardByName("toronto-wards-2018"),
   },
   "uxbridge-township-council": {
     mayor: "census-subdivisions/3518029",
-    ward: wardById("uxbridge-wards"),
+    ward: wardByName("uxbridge-wards"),
   },
   "vaughan-city-council": {
     mayor: "census-subdivisions/3519028",
-    ward: wardById("vaughan-wards"),
+    ward: () => null,
   },
   "waterloo-city-council": {
     mayor: "census-subdivisions/3530016",
-    ward: wardById("waterloo-wards"),
+    ward: wardByName("waterloo-wards"),
   },
   "waterloo-regional-council": {
     mayor: "census-divisions/3530",
@@ -323,15 +322,15 @@ export const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>
   },
   "welland-city-council": {
     mayor: "census-subdivisions/3526032",
-    ward: wardById("welland-wards"),
+    ward: wardByName("welland-wards"),
   },
   "wellesley-township-council": {
     mayor: "census-subdivisions/3530027",
-    ward: wardById("wellesley-wards"),
+    ward: wardByName("wellesley-wards"),
   },
   "whitby-town-council": {
     mayor: "census-subdivisions/3518009",
-    ward: () => null,
+    ward: wardByName("whitby-wards"),
   },
   "whitchurch-stouffville-town-council": {
     mayor: "census-subdivisions/3519044",
@@ -339,19 +338,20 @@ export const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>
   },
   "wilmot-township-council": {
     mayor: "census-subdivisions/3530020",
-    ward: wardById("wilmot-wards"),
+    ward: () => null,
   },
   "windsor-city-council": {
     mayor: "census-subdivisions/3537039",
-    ward: wardById("windsor-wards"),
+    ward: wardByName("windsor-wards"),
   },
   "woolwich-township-council": {
     mayor: "census-subdivisions/3530035",
-    ward: wardById("woolwich-wards"),
+    ward: () => null,
   },
+  // Prince Edward Island
   "charlottetown-city-council": {
     mayor: "census-subdivisions/1102075",
-    ward: wardById("charlottetown-wards"),
+    ward: wardByName("charlottetown-wards"),
   },
   "stratford-town-council": {
     mayor: "census-subdivisions/1102080",
@@ -361,61 +361,62 @@ export const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>
     mayor: "census-subdivisions/1103025",
     ward: () => null,
   },
+  // Quebec
   "conseil-municipal-de-beaconsfield": {
     mayor: "census-subdivisions/2466107",
-    ward: wardById("beaconsfield-wards"),
+    ward: wardByName("beaconsfield-districts"),
   },
   "conseil-municipal-de-brossard": {
     mayor: "census-subdivisions/2458007",
-    ward: wardById("brossard-wards"),
+    ward: wardByName("brossard-districts"),
   },
   "conseil-municipal-de-cote-saint-luc": {
     mayor: "census-subdivisions/2466058",
-    ward: wardById("cote-saint-luc-wards"),
+    ward: wardByName("cote-saint-luc-districts"),
   },
   "conseil-municipal-de-dollard-des-ormeaux": {
     mayor: "census-subdivisions/2466142",
-    ward: wardById("dollard-des-ormeaux-wards"),
+    ward: wardByName("dollard-des-ormeaux-districts"),
   },
   "conseil-municipal-de-dorval": {
     mayor: "census-subdivisions/2466087",
-    ward: wardById("dorval-wards"),
+    ward: wardByName("dorval-districts"),
   },
   "conseil-municipal-de-gatineau": {
     mayor: "census-subdivisions/2481017",
-    ward: wardById("gatineau-wards"),
+    ward: wardByName("gatineau-districts"),
   },
   "conseil-municipal-de-kirkland": {
     mayor: "census-subdivisions/2466102",
-    ward: wardById("kirkland-wards"),
+    ward: wardByName("kirkland-districts"),
   },
   "conseil-municipal-de-laval": {
-    mayor: "",
-    ward: () => null,
+    mayor: "census-subdivisions/2465005",
+    ward: wardByName("laval-districts"),
   },
   "conseil-municipal-de-levis": {
     mayor: "census-subdivisions/2425213",
-    ward: wardById("levis-wards"),
+    ward: wardByName("levis-districts"),
   },
   "conseil-municipal-de-longueuil": {
     mayor: "census-subdivisions/2458227",
-    ward: () => null,
+    ward: wardByName("longueuil-districts"),
   },
   "conseil-municipal-de-mercier": {
     mayor: "census-subdivisions/2467045",
-    ward: wardById("mercier-wards"),
+    ward: wardByName("mercier-districts"),
   },
   "conseil-municipal-de-montreal-est": {
     mayor: "census-subdivisions/2466007",
-    ward: wardById("montreal-est-wards"),
+    ward: wardByName("montreal-est-districts"),
   },
   "conseil-municipal-de-montreal": {
     mayor: "census-subdivisions/2466023",
-    ward: () => null,
+    ward: wardByName("quebec-montreal-wards"),
   },
   "conseil-municipal-de-pointe-claire": {
     mayor: "census-subdivisions/2466097",
-    ward: wardById("pointe-claire-wards"),
+    ward: wardByName("pointe-claire-districts"),
   },
   "conseil-municipal-de-quebec": {
     mayor: "census-subdivisions/2423027",
@@ -427,43 +428,44 @@ export const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>
   },
   "conseil-municipal-de-saint-jean-sur-richelieu": {
     mayor: "census-subdivisions/2456083",
-    ward: wardById("saint-jean-sur-richelieu-wards"),
+    ward: wardByName("saint-jean-sur-richelieu-districts"),
   },
   "conseil-municipal-de-saint-jerome": {
     mayor: "census-subdivisions/2475017",
-    ward: wardById("saint-jerome-wards"),
+    ward: wardByName("saint-jerome-districts"),
   },
   "conseil-municipal-de-sainte-anne-de-bellevue": {
-    mayor: "",
-    ward: wardById("sainte-anne-de-bellevue-wards"),
+    mayor: "census-subdivisions/2466117",
+    ward: wardByName("sainte-anne-de-bellevue-districts"),
   },
   "conseil-municipal-de-senneville": {
     mayor: "census-subdivisions/2466127",
-    ward: wardById("senneville-wards"),
+    ward: () => null,
   },
   "conseil-municipal-de-sherbrooke": {
     mayor: "census-subdivisions/2443027",
-    ward: () => null,
+    ward: wardByName("sherbrooke-districts"),
   },
   "conseil-municipal-de-terrebonne": {
     mayor: "census-subdivisions/2464008",
-    ward: wardById("terrebonne-wards"),
+    ward: () => null,
   },
   "conseil-municipal-de-trois-rivieres": {
     mayor: "census-subdivisions/2437067",
-    ward: () => null,
+    ward: wardByName("quebec-trois-rivieres-wards"),
   },
   "conseil-municipal-de-westmount": {
     mayor: "census-subdivisions/2466032",
-    ward: wardById("westmount-wards"),
+    ward: () => null,
   },
+  // Saskatchewan
   "regina-city-council": {
     mayor: "census-subdivisions/4706027",
-    ward: wardById("regina-wards"),
+    ward: wardByName("regina-wards"),
   },
   "saskatoon-city-council": {
     mayor: "census-subdivisions/4711066",
-    ward: wardById("saskatoon-wards"),
+    ward: wardByName("saskatoon-wards"),
   },
 };
 
@@ -471,9 +473,9 @@ const MAYOR_OFFICES = new Set([
   "Mayor",
   "Lord Mayor",
   "Chair",
+  "Reeve",
 ]);
 
-/** Returns true for any head-of-council office title, including French variants. */
 export function isMayorOffice(office: string | undefined): boolean {
   if (!office) return false;
   return MAYOR_OFFICES.has(office) || office.startsWith("Maire") || office === "Mairesse";
@@ -489,19 +491,12 @@ function cityFromSlug(slug: string): string {
     .replace(/-council$/, "");
 }
 
-/**
- * Returns the resolved BoundaryConfig for a given slug.
- * Merges BOUNDARY_OVERRIDES on top of the default derivation.
- */
 export function getBoundaryConfig(slug: string): BoundaryConfig {
   const city = cityFromSlug(slug);
   const override = BOUNDARY_OVERRIDES[slug] ?? {};
   return {
     mayor: override.mayor ?? city,
-    ward:
-      override.ward ??
-      ((rep) =>
-        rep.district_id ? `${city}-municipal/ward-${rep.district_id}` : null),
+    ward: override.ward ?? wardFromBoundaryUrl,
     getBoundary: override.getBoundary,
   };
 }

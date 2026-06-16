@@ -1,7 +1,8 @@
 import type { Rep } from "../interfaces";
 import type { SyncTarget } from "../interfaces";
 import { createOpenNorthScraper } from "../provincial/opennorth";
-import { getBoundaryConfig, isMayorOffice, type WardRep } from "./boundaries";
+import { getBoundaryConfig, isMayorOffice, type WardRep } from "../boundaries/municipal";
+import { normalizeElectedOffice } from "../boundaries";
 
 const BASE = "https://scrapers.herokuapp.com/represent/";
 
@@ -139,8 +140,12 @@ function withBoundaries(
         ? config.getBoundary(raw)
         : isMayorOffice(rep.elected_office)
           ? config.mayor || null
-          : config.ward(raw);
-      return boundary ? { ...rep, boundary } : rep;
+          : config.ward(raw) || config.mayor || null;
+      return {
+        ...rep,
+        elected_office: normalizeElectedOffice(rep.elected_office),
+        ...(boundary && { boundary }),
+      };
     });
   };
 }

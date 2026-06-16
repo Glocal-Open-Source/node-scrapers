@@ -80,6 +80,7 @@ export async function scrapeSenators(): Promise<Rep[]> {
       name: `${first_name} ${last_name}`.trim(),
       first_name,
       last_name,
+      elected_office: "Senator",
       party_name: mapped ?? x.party_name,
       province: x.province,
       district_name: x.province,
