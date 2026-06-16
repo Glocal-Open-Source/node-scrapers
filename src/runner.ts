@@ -2,6 +2,7 @@ import { DEFAULTS } from "./constants";
 import { getDiff, type RepDiff } from "./diff";
 import { http } from "./http";
 import type { Rep, SyncTarget } from "./interfaces";
+import { refreshMunicipalAggregateDiff } from "./municipal/diff";
 import { registry } from "./registry";
 import { writeRunError, writeRunSuccess } from "./storage/runStore";
 
@@ -65,5 +66,11 @@ export async function runAll(): Promise<void> {
         err,
       );
     }
+  }
+
+  try {
+    await refreshMunicipalAggregateDiff();
+  } catch (err) {
+    console.error("[municipal] aggregate diff refresh failed", err);
   }
 }

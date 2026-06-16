@@ -4,6 +4,10 @@ import express from "express";
 import { DEFAULTS } from "./constants";
 import { env } from "./env";
 import type { GovLevel, SyncTarget } from "./interfaces";
+import {
+  readMunicipalAggregateDiff,
+  refreshMunicipalAggregateDiff,
+} from "./municipal/diff";
 import { normalizeSlug } from "./slug";
 import { getStoredRun } from "./storage/runStore";
 
@@ -141,7 +145,40 @@ app.get("/diff", async (_req, res) => {
         };
       }),
     );
-    res.json({ generatedAt, scrapers });
+    let municipal = await readMunicipalAggregateDiff();
+    if (!municipal) {
+      try {
+        municipal = await refreshMunicipalAggregateDiff();
+      } catch (err) {
+        console.error("[scrapers] GET /diff municipal aggregate", err);
+        municipal = {
+          generatedAt: new Date().toISOString(),
+          scope: { councils: 0 },
+          mayors: {
+            status: "error",
+            scrapeCount: 0,
+            youcountCount: 0,
+            councilsQueried: 0,
+            currentSource: "",
+            diff: null,
+            diffError:
+              err instanceof Error ? err.message : "Failed to compute municipal diff",
+          },
+          councillors: {
+            status: "error",
+            scrapeCount: 0,
+            youcountCount: 0,
+            councilsQueried: 0,
+            currentSource: "",
+            diff: null,
+            diffError:
+              err instanceof Error ? err.message : "Failed to compute municipal diff",
+          },
+        };
+      }
+    }
+
+    res.json({ generatedAt, scrapers, municipal });
   } catch (err) {
     console.error("[scrapers] GET /diff", err);
     res.status(500).json({ success: false, message: "Failed to load diffs" });
