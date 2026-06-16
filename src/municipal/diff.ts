@@ -27,6 +27,7 @@ export type MunicipalCouncilStatus = {
   finishedAt: string | null;
   scrapeCount: number;
   diffError: string | null;
+  counts: { added: number; deleted: number; changed: number } | null;
 };
 
 export type MunicipalAggregateDiff = {
@@ -193,6 +194,7 @@ async function loadCouncilStatuses(): Promise<MunicipalCouncilStatus[]> {
           finishedAt: null,
           scrapeCount: 0,
           diffError: null,
+          counts: null,
         };
       }
       if (run.status === "error") {
@@ -202,6 +204,7 @@ async function loadCouncilStatuses(): Promise<MunicipalCouncilStatus[]> {
           finishedAt: run.finishedAt,
           scrapeCount: 0,
           diffError: run.error,
+          counts: null,
         };
       }
       return {
@@ -210,9 +213,21 @@ async function loadCouncilStatuses(): Promise<MunicipalCouncilStatus[]> {
         finishedAt: run.finishedAt,
         scrapeCount: run.count ?? run.data?.length ?? 0,
         diffError: run.diffError ?? null,
+        counts: null,
       };
     }),
   );
+}
+
+function attachCouncilCounts(
+  councils: MunicipalCouncilStatus[],
+  councilDiffs: Map<string, RepDiff>,
+): MunicipalCouncilStatus[] {
+  return councils.map((council) => {
+    const diff = councilDiffs.get(council.slug);
+    if (!diff) return council;
+    return { ...council, counts: diff.counts };
+  });
 }
 
 export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregateDiff> {
@@ -224,6 +239,7 @@ export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregat
   const scrapeCouncillors: TaggedRep[] = [];
   const youcountMayors: TaggedRep[] = [];
   const youcountCouncillors: TaggedRep[] = [];
+  const councilDiffs = new Map<string, RepDiff>();
   let councilsQueried = 0;
   let fetchError: string | null = null;
 
@@ -240,8 +256,16 @@ export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregat
         fetchYouCountRole("Mayor", province, districtName),
         fetchYouCountRole(councillorOffice, province, districtName),
       ]);
-      youcountMayors.push(...tagCouncil(mayorFetch.reps, slug));
-      youcountCouncillors.push(...tagCouncil(councillorFetch.reps, slug));
+      const youcountMayorReps = tagCouncil(mayorFetch.reps, slug);
+      const youcountCouncillorReps = tagCouncil(councillorFetch.reps, slug);
+      youcountMayors.push(...youcountMayorReps);
+      youcountCouncillors.push(...youcountCouncillorReps);
+
+      const councilDiff = mergeDiffs([
+        computeRoleDiff(sMayors, youcountMayorReps),
+        computeRoleDiff(sCouncillors, youcountCouncillorReps),
+      ]);
+      if (councilDiff) councilDiffs.set(slug, councilDiff);
       councilsQueried++;
     } catch (e) {
       fetchError = e instanceof Error ? e.message : String(e);
@@ -303,7 +327,7 @@ export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregat
     combined: mergeDiffs(roleDiffs),
     mayors,
     councillors,
-    councils,
+    councils: attachCouncilCounts(councils, councilDiffs),
   };
 }
 

@@ -6,6 +6,7 @@ import { env } from "./env";
 import type { GovLevel, SyncTarget } from "./interfaces";
 import {
   MUNICIPAL_YOUCOUNT_SOURCE,
+  readMunicipalAggregateDiff,
   refreshMunicipalAggregateDiff,
 } from "./municipal/diff";
 import { normalizeSlug } from "./slug";
@@ -149,38 +150,40 @@ app.get("/diff", async (_req, res) => {
         }),
     );
 
-    let municipal;
-    try {
-      municipal = await refreshMunicipalAggregateDiff();
-    } catch (err) {
-      console.error("[scrapers] GET /diff municipal aggregate", err);
-      const message =
-        err instanceof Error ? err.message : "Failed to compute municipal diff";
-      municipal = {
-        generatedAt: new Date().toISOString(),
-        scope: { councils: 0, councilsWithData: 0, councilsQueried: 0 },
-        currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
-        combined: null,
-        councils: [],
-        mayors: {
-          status: "error",
-          scrapeCount: 0,
-          youcountCount: 0,
-          councilsQueried: 0,
+    let municipal = await readMunicipalAggregateDiff();
+    if (!municipal) {
+      try {
+        municipal = await refreshMunicipalAggregateDiff();
+      } catch (err) {
+        console.error("[scrapers] GET /diff municipal aggregate", err);
+        const message =
+          err instanceof Error ? err.message : "Failed to compute municipal diff";
+        municipal = {
+          generatedAt: new Date().toISOString(),
+          scope: { councils: 0, councilsWithData: 0, councilsQueried: 0 },
           currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
-          diff: null,
-          diffError: message,
-        },
-        councillors: {
-          status: "error",
-          scrapeCount: 0,
-          youcountCount: 0,
-          councilsQueried: 0,
-          currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
-          diff: null,
-          diffError: message,
-        },
-      };
+          combined: null,
+          councils: [],
+          mayors: {
+            status: "error",
+            scrapeCount: 0,
+            youcountCount: 0,
+            councilsQueried: 0,
+            currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
+            diff: null,
+            diffError: message,
+          },
+          councillors: {
+            status: "error",
+            scrapeCount: 0,
+            youcountCount: 0,
+            councilsQueried: 0,
+            currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
+            diff: null,
+            diffError: message,
+          },
+        };
+      }
     }
 
     res.json({ generatedAt, scrapers, municipal });

@@ -1,14 +1,18 @@
 import type { Rep } from "./interfaces";
 
+export interface RepDiffChanged {
+  name: string;
+  first_name: string;
+  last_name: string;
+  updated: string[];
+  /** Extra primary-key fields (e.g. `council`, `district_name`) when used for matching. */
+  [key: string]: string | string[];
+}
+
 export interface RepDiff {
   added: Rep[];
   deleted: Rep[];
-  changed: Array<{
-    name: string;
-    first_name: string;
-    last_name: string;
-    updated: string[];
-  }>;
+  changed: RepDiffChanged[];
   counts: { added: number; deleted: number; changed: number };
   primaryFields: string[];
   secondaryFields: string[];
@@ -93,12 +97,17 @@ export function getDiff({
       }
     }
     if (updated.length > 0) {
-      changed.push({
+      const entry: RepDiffChanged = {
         name: currRep.name,
         first_name: currRep.first_name,
         last_name: currRep.last_name,
         updated,
-      });
+      };
+      for (const f of primaryFields) {
+        if (f === "name" || f === "first_name" || f === "last_name") continue;
+        entry[f] = getField(newRep, f);
+      }
+      changed.push(entry);
     }
   }
 
