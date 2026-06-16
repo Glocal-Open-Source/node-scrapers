@@ -13,11 +13,14 @@ const data: BoundaryEntry[] = JSON.parse(
   readFileSync(join(__dirname, "data.json"), "utf8"),
 ) as BoundaryEntry[];
 
-// Fold apostrophe/quote variants so boundaries.json (curly ') and OpenNorth (straight ')
-// compare equal.
+// Fold apostrophe/quote variants and dash/separator variants so boundaries.json and scrapers
+// compare equal regardless of curly vs straight quotes or em-dash vs " - " separators.
 function normalizeKey(s: string): string {
   return s
-    .replace(/[‘’‚‛ʼ′]/g, "'")
+    .normalize("NFC")
+    .replace(/[\u2018\u2019\u201a\u201b\u02bc\u2032]/g, "'")
+    .replace(/[—–]/g, "-")
+    .replace(/\s+-\s+/g, "-")
     .toLowerCase()
     .trim();
 }
