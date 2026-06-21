@@ -13,7 +13,7 @@ export interface RepDiffChanged {
   first_name: string;
   last_name: string;
   updated: RepDiffFieldChange[];
-  /** Extra primary-key fields (e.g. `council`, `district_name`) when used for matching. */
+  /** Extra primary-key fields (e.g. `organization`, `district_name`) when used for matching. */
   [key: string]: string | RepDiffFieldChange[] | number | undefined;
 }
 

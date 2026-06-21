@@ -51,9 +51,9 @@ export type MunicipalAggregateDiff = {
 export const MUNICIPAL_YOUCOUNT_SOURCE =
   `${YOUCOUNT_BASE}?province=<province>&district_name=<city>&elected_office=Mayor|Councillor|Conseiller`;
 
-type TaggedRep = Rep & { council: string };
+type TaggedRep = Rep & { organization: string };
 
-const MUNICIPAL_PRIMARY = ["name", "council"] as const;
+const MUNICIPAL_PRIMARY = ["name", "organization"] as const;
 const MUNICIPAL_SECONDARY = [
   "email",
   "party_name",
@@ -148,8 +148,8 @@ async function fetchYouCountRole(
   };
 }
 
-function tagCouncil(reps: Rep[], council: string): TaggedRep[] {
-  return reps.map((r) => ({ ...r, council }));
+function tagOrganization(reps: Rep[], organization: string): TaggedRep[] {
+  return reps.map((r) => ({ ...r, organization }));
 }
 
 async function loadScrapedByCouncil(): Promise<
@@ -275,7 +275,7 @@ export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregat
 
   for (const [slug, { province, reps }] of scrapedByCouncil) {
     const districtName = inferDistrictName(slug, reps);
-    const taggedScrape = tagCouncil(reps, slug);
+    const taggedScrape = tagOrganization(reps, slug);
     const { mayors: sMayors, councillors: sCouncillors } = splitByRole(taggedScrape);
     scrapeMayors.push(...sMayors);
     scrapeCouncillors.push(...sCouncillors);
@@ -286,8 +286,8 @@ export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregat
         fetchYouCountRole("Mayor", province, districtName),
         fetchYouCountRole(councillorOffice, province, districtName),
       ]);
-      const youcountMayorReps = tagCouncil(mayorFetch.reps, slug);
-      const youcountCouncillorReps = tagCouncil(councillorFetch.reps, slug);
+      const youcountMayorReps = tagOrganization(mayorFetch.reps, slug);
+      const youcountCouncillorReps = tagOrganization(councillorFetch.reps, slug);
       youcountMayors.push(...youcountMayorReps);
       youcountCouncillors.push(...youcountCouncillorReps);
 

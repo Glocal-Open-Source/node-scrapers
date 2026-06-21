@@ -51,4 +51,5 @@ export interface Rep {
   facebook?: string;
   twitter?: string;
   boundary?: string;
+  organization?: string;
 }
