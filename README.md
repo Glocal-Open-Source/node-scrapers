@@ -23,9 +23,23 @@ The `data/` directory is **gitignored** (see repo `.gitignore`).
 
 ## Environment
 
-- `DATA_DIR` — optional; defaults to `./data` under the current working directory.
+- `DATA_DIR` — JSON storage root. Defaults to `./data` under cwd locally; **Docker image defaults to `/data`** (must match your volume mount).
 - `PORT` — HTTP port (default `3101`).
+- `SCRAPE_ON_STARTUP` — when `true`, runs `scrape:all` in the background after HTTP starts (repopulates a fresh volume).
 - `API_TUNNEL_SECRET` — optional; when set, protects `/all`, `/diff`, `/federal/*`, `/provincial/*`, and `/municipal/*` (not `/health`) like `@yc/mq`.
+
+## Docker / Dokploy (persistent data)
+
+Scrape results are **files on disk**, not in the image. If the API is empty after redeploy, the container is almost always reading/writing the **wrong path** or **no persistent volume**.
+
+**Required for production:**
+
+1. Mount a **persistent volume** at **`/data`** on the long-running service.
+2. Set **`DATA_DIR=/data`** (default in the Docker image; do not omit in Dokploy).
+3. Run **`node dist/runAll.js`** on a schedule (or set **`SCRAPE_ON_STARTUP=true`** once after first deploy).
+4. Any scrape cron/job must use the **same** `/data` volume as the HTTP service.
+
+On startup the service logs: `DATA_DIR=/data (N run files on disk)`. If `N` is 0 after redeploy, the volume is not attached or points at an empty directory.
 
 ## Docker Compose
 
@@ -35,7 +49,7 @@ From `apps/scrapers`:
 docker compose up --build
 ```
 
-- **scrapers**: HTTP on **`3101`**, JSON under **`./data` → `/data`** in the container (`DATA_DIR=/data`, bind mount `./data`).
+- **scrapers**: HTTP on **`3101`**, JSON on named volume **`scrapers_data` → `/data`** (`DATA_DIR=/data`). Use bind mount `./data:/data` instead if you prefer a local folder.
 - **Scheduled full refresh:** run **`node dist/runAll.js`** (same image, same `DATA_DIR`) from Dokploy or `docker compose run --rm scrapers node dist/runAll.js` so enabled scrapers run **one after another**; the long-running service only serves HTTP.
 
 ### HTTP API

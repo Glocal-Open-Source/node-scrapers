@@ -17,6 +17,8 @@ FROM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+# Must match the container volume mount (see docker-compose.yml / Dokploy).
+ENV DATA_DIR=/data
 
 COPY package.json ./
 RUN npm install --omit=dev
