@@ -3,6 +3,7 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 
 import type { Rep } from "../interfaces";
+import { stripHonorific } from "../util/repName";
 
 const execFileAsync = promisify(execFile);
 
@@ -34,7 +35,7 @@ function parseCsvRow(line: string): string[] {
 }
 
 function normalizeName(name: string): string {
-  return name.replace(/^Hon\.\s*/i, "").trim().toLowerCase();
+  return stripHonorific(name).toLowerCase();
 }
 
 /** Yukon MLAs */
@@ -65,7 +66,7 @@ export async function scrapeYtMla(): Promise<Rep[]> {
     const detailUrl = href ? `https://yukonassembly.ca${href}` : undefined;
 
     const rawName = link.querySelector("h3")?.textContent.trim() ?? "";
-    const name = rawName.replace(/^Hon\.\s*/i, "").trim();
+    const name = stripHonorific(rawName);
     if (!name) continue;
 
     const nameParts = name.split(/\s+/).filter(Boolean);

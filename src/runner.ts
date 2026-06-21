@@ -5,6 +5,7 @@ import type { Rep, SyncTarget } from "./interfaces";
 import { refreshMunicipalAggregateDiff } from "./municipal/diff";
 import { registry } from "./registry";
 import { writeRunError, writeRunSuccess } from "./storage/runStore";
+import { normalizeRepHonorifics } from "./util/repName";
 
 export async function runOne(target: SyncTarget): Promise<void> {
   const { gov_level: govLevel, slug } = target;
@@ -14,7 +15,7 @@ export async function runOne(target: SyncTarget): Promise<void> {
     if (!scrape) {
       throw new Error(`No scraper registered for slug: ${slug}`);
     }
-    const reps = await scrape();
+    const reps = (await scrape()).map(normalizeRepHonorifics);
     const finishedAt = new Date();
 
     let diff: RepDiff | null = null;

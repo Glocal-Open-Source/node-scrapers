@@ -1,5 +1,6 @@
 import { http } from "../http";
 import type { GovLevel, OfficeRecord, Rep } from "../interfaces";
+import { normalizeRepHonorifics } from "../util/repName";
 
 function parseMaybeJson(value: unknown): unknown {
   if (typeof value !== "string") return value;
@@ -30,9 +31,10 @@ function detailUrlFromRaw(raw: Record<string, unknown>): string {
 }
 
 function ensureNameParts(rep: Rep): Rep {
-  let first_name = rep.first_name?.trim() ?? "";
-  let last_name = rep.last_name?.trim() ?? "";
-  const name = rep.name?.trim() ?? "";
+  const cleaned = normalizeRepHonorifics(rep);
+  let first_name = cleaned.first_name?.trim() ?? "";
+  let last_name = cleaned.last_name?.trim() ?? "";
+  const name = cleaned.name?.trim() ?? "";
 
   if ((!first_name || !last_name) && name) {
     const parts = name.split(/\s+/).filter(Boolean);
