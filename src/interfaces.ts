@@ -31,6 +31,8 @@ export interface QuickLink {
 
 /** Shape stored in run JSON (core fields + optional legislature metadata). */
 export interface Rep {
+  /** YouCount representative id (present on API snapshots used for diff). */
+  id?: number;
   email: string;
   name: string;
   last_name: string;

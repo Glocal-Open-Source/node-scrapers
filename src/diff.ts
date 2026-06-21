@@ -1,12 +1,14 @@
 import type { Rep } from "./interfaces";
 
 export interface RepDiffChanged {
+  /** YouCount representative id (from current snapshot). */
+  id?: number;
   name: string;
   first_name: string;
   last_name: string;
   updated: string[];
   /** Extra primary-key fields (e.g. `council`, `district_name`) when used for matching. */
-  [key: string]: string | string[];
+  [key: string]: string | string[] | number | undefined;
 }
 
 export interface RepDiff {
@@ -114,6 +116,7 @@ export function getDiff({
     }
     if (updated.length > 0) {
       const entry: RepDiffChanged = {
+        ...(currRep.id != null ? { id: currRep.id } : {}),
         name: currRep.name,
         first_name: currRep.first_name,
         last_name: currRep.last_name,
