@@ -97,7 +97,7 @@ export async function scrapeYtMla(): Promise<Rep[]> {
         : undefined,
       quick_links: detailUrl
         ? [{ title: "Official Website", url: detailUrl }]
-        : undefined,
+        : [],
     });
   }
 
