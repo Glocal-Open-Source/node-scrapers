@@ -152,9 +152,15 @@ function withBoundaries(
 
 export const municipalRegistry: Record<string, () => Promise<Rep[]>> =
   Object.fromEntries(
-    SETS.map(({ slug, herokSlug }) => [
+    SETS.map(({ slug, herokSlug, province }) => [
       slug,
-      withBoundaries(slug, createOpenNorthScraper(`${BASE}${herokSlug}/`)),
+      withBoundaries(
+        slug,
+        createOpenNorthScraper(`${BASE}${herokSlug}/`, {
+          province,
+          gov_level: "municipal",
+        }),
+      ),
     ]),
   );
 
