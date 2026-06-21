@@ -1,7 +1,8 @@
 import type { Rep } from "../interfaces";
 
+/** Honourable/Honorable titles and "Hon." — not bare "Hon" (a valid given name). */
 const HONORIFIC_PREFIX =
-  /^(?:(?:the\s+)?(?:honourable|honorable)(?:\s+|$)|hon\.?\s+)/i;
+  /^(?:(?:the\s+)?(?:honourable|honorable)(?:\s+|$)|hon\.\s+)/i;
 
 /** Remove leading honorifics (e.g. "Honourable", "Hon.", "The Honourable"). */
 export function stripHonorific(name: string): string {
