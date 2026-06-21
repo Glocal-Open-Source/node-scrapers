@@ -56,7 +56,7 @@ function targetFor(govLevel: GovLevel, slug: string): SyncTarget | undefined {
   );
 }
 
-/** All registered scrapers (`gov_level` + `slug` for `GET /federal/...` and `GET /provincial/...`). */
+/** All registered scrapers (`gov_level` + `slug` for per-tier run routes). */
 app.get("/all", (_req, res) => {
   res.json({
     scrapers: Object.values(DEFAULTS).map((t) => ({
@@ -101,6 +101,15 @@ app.get("/provincial/:slug", async (req, res) => {
     await loadRun(res, "provincial", req.params.slug);
   } catch (err) {
     console.error("[scrapers] GET /provincial/:slug", err);
+    res.status(500).json({ success: false, message: "Failed to load run" });
+  }
+});
+
+app.get("/municipal/:slug", async (req, res) => {
+  try {
+    await loadRun(res, "municipal", req.params.slug);
+  } catch (err) {
+    console.error("[scrapers] GET /municipal/:slug", err);
     res.status(500).json({ success: false, message: "Failed to load run" });
   }
 });
