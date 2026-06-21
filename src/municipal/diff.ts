@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { isMayorOffice } from "../boundaries/municipal";
-import { getDiff, type RepDiff } from "../diff";
+import { emptyRepDiff, getDiff, type RepDiff } from "../diff";
 import { http } from "../http";
 import type { Rep } from "../interfaces";
 import { getDataDir, getStoredRun } from "../storage/runStore";
@@ -17,7 +17,7 @@ export type MunicipalRoleDiff = {
   youcountCount: number;
   councilsQueried: number;
   currentSource: string;
-  diff: RepDiff | null;
+  diff: RepDiff;
   diffError: string | null;
 };
 
@@ -39,7 +39,7 @@ export type MunicipalAggregateDiff = {
   };
   currentSource: string;
   /** All 108 councils: scraped reps vs YouCount (mayors + councillors). */
-  combined: RepDiff | null;
+  combined: RepDiff;
   mayors: MunicipalRoleDiff;
   councillors: MunicipalRoleDiff;
   councils: MunicipalCouncilStatus[];
@@ -57,6 +57,25 @@ const MUNICIPAL_SECONDARY = [
   "district_name",
   "elected_office",
 ] as const;
+
+export function emptyMunicipalRepDiff(): RepDiff {
+  return emptyRepDiff({
+    primaryFields: [...MUNICIPAL_PRIMARY],
+    secondaryFields: [...MUNICIPAL_SECONDARY],
+  });
+}
+
+function normalizeMunicipalAggregate(
+  record: MunicipalAggregateDiff,
+): MunicipalAggregateDiff {
+  const empty = emptyMunicipalRepDiff();
+  return {
+    ...record,
+    combined: record.combined ?? empty,
+    mayors: { ...record.mayors, diff: record.mayors.diff ?? empty },
+    councillors: { ...record.councillors, diff: record.councillors.diff ?? empty },
+  };
+}
 
 function slugToDistrictGuess(slug: string): string {
   const raw = slug
@@ -163,8 +182,8 @@ function computeRoleDiff(
   });
 }
 
-function mergeDiffs(diffs: RepDiff[]): RepDiff | null {
-  if (diffs.length === 0) return null;
+function mergeDiffs(diffs: RepDiff[]): RepDiff {
+  if (diffs.length === 0) return emptyMunicipalRepDiff();
   const added = diffs.flatMap((d) => d.added);
   const deleted = diffs.flatMap((d) => d.deleted);
   const changed = diffs.flatMap((d) => d.changed);
@@ -265,7 +284,7 @@ export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregat
         computeRoleDiff(sMayors, youcountMayorReps),
         computeRoleDiff(sCouncillors, youcountCouncillorReps),
       ]);
-      if (councilDiff) councilDiffs.set(slug, councilDiff);
+      councilDiffs.set(slug, councilDiff);
       councilsQueried++;
     } catch (e) {
       fetchError = e instanceof Error ? e.message : String(e);
@@ -284,7 +303,7 @@ export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregat
         youcountCount: 0,
         councilsQueried: 0,
         currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
-        diff: null,
+        diff: emptyMunicipalRepDiff(),
         diffError: "No municipal scrape data on disk yet",
       };
     }
@@ -295,7 +314,7 @@ export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregat
         youcountCount: 0,
         councilsQueried,
         currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
-        diff: null,
+        diff: emptyMunicipalRepDiff(),
         diffError: fetchError,
       };
     }
@@ -312,11 +331,8 @@ export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregat
 
   const mayors = buildRole(scrapeMayors, youcountMayors);
   const councillors = buildRole(scrapeCouncillors, youcountCouncillors);
-  const roleDiffs = [mayors.diff, councillors.diff].filter(
-    (d): d is RepDiff => d != null,
-  );
 
-  return {
+  return normalizeMunicipalAggregate({
     generatedAt: new Date().toISOString(),
     scope: {
       councils: Object.keys(municipalTargets).length,
@@ -324,11 +340,11 @@ export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregat
       councilsQueried,
     },
     currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
-    combined: mergeDiffs(roleDiffs),
+    combined: mergeDiffs([mayors.diff, councillors.diff]),
     mayors,
     councillors,
     councils: attachCouncilCounts(councils, councilDiffs),
-  };
+  });
 }
 
 export function aggregateDiffPath(): string {
@@ -346,7 +362,9 @@ export async function writeMunicipalAggregateDiff(
 export async function readMunicipalAggregateDiff(): Promise<MunicipalAggregateDiff | null> {
   try {
     const raw = await fs.readFile(aggregateDiffPath(), "utf8");
-    return JSON.parse(raw) as MunicipalAggregateDiff;
+    return normalizeMunicipalAggregate(
+      JSON.parse(raw) as MunicipalAggregateDiff,
+    );
   } catch (e) {
     const code = (e as NodeJS.ErrnoException).code;
     if (code === "ENOENT") return null;

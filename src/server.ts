@@ -5,6 +5,7 @@ import { DEFAULTS } from "./constants";
 import { env } from "./env";
 import type { GovLevel, SyncTarget } from "./interfaces";
 import {
+  emptyMunicipalRepDiff,
   MUNICIPAL_YOUCOUNT_SOURCE,
   readMunicipalAggregateDiff,
   refreshMunicipalAggregateDiff,
@@ -171,7 +172,7 @@ app.get("/diff", async (_req, res) => {
           generatedAt: new Date().toISOString(),
           scope: { councils: 0, councilsWithData: 0, councilsQueried: 0 },
           currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
-          combined: null,
+          combined: emptyMunicipalRepDiff(),
           councils: [],
           mayors: {
             status: "error",
@@ -179,7 +180,7 @@ app.get("/diff", async (_req, res) => {
             youcountCount: 0,
             councilsQueried: 0,
             currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
-            diff: null,
+            diff: emptyMunicipalRepDiff(),
             diffError: message,
           },
           councillors: {
@@ -188,7 +189,7 @@ app.get("/diff", async (_req, res) => {
             youcountCount: 0,
             councilsQueried: 0,
             currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
-            diff: null,
+            diff: emptyMunicipalRepDiff(),
             diffError: message,
           },
         };

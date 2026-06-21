@@ -32,6 +32,22 @@ export interface GetDiffParams {
   secondaryFields?: string[];
 }
 
+export function emptyRepDiff(
+  fields: { primaryFields?: string[]; secondaryFields?: string[] } = {},
+): RepDiff {
+  const primaryFields = fields.primaryFields ?? ["name", "district_name"];
+  const secondaryFields = fields.secondaryFields ?? ["email", "party_name"];
+  return {
+    added: [],
+    deleted: [],
+    changed: [],
+    counts: { added: 0, deleted: 0, changed: 0 },
+    primaryFields,
+    secondaryFields,
+    date: new Date().toISOString(),
+  };
+}
+
 /** Ported from admin-amplify `rep-sync/utils/diff.ts`; returns arrays (not JSON strings). */
 export function getDiff({
   currentReps,
