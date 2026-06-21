@@ -1,14 +1,20 @@
 import type { Rep } from "./interfaces";
 
+export interface RepDiffFieldChange {
+  field: string;
+  old: string;
+  new: string;
+}
+
 export interface RepDiffChanged {
   /** YouCount representative id (from current snapshot). */
   id?: number;
   name: string;
   first_name: string;
   last_name: string;
-  updated: string[];
+  updated: RepDiffFieldChange[];
   /** Extra primary-key fields (e.g. `council`, `district_name`) when used for matching. */
-  [key: string]: string | string[] | number | undefined;
+  [key: string]: string | RepDiffFieldChange[] | number | undefined;
 }
 
 export interface RepDiff {
@@ -103,15 +109,12 @@ export function getDiff({
       );
       continue;
     }
-    const updated: string[] = [];
+    const updated: RepDiffFieldChange[] = [];
     for (const f of secondaryFields) {
-      if (
-        (getField(currRep, f) || "").toLowerCase() !==
-        (getField(newRep, f) || "").toLowerCase()
-      ) {
-        updated.push(
-          `${f}: [old]: ${getField(currRep, f)}, [new]: ${getField(newRep, f)}`,
-        );
+      const oldVal = getField(currRep, f);
+      const newVal = getField(newRep, f);
+      if ((oldVal || "").toLowerCase() !== (newVal || "").toLowerCase()) {
+        updated.push({ field: f, old: oldVal, new: newVal });
       }
     }
     if (updated.length > 0) {

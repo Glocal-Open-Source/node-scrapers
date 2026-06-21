@@ -13,7 +13,7 @@ Under `DATA_DIR` (default `./data` next to the process cwd, or `/data` in Docker
 - `federal/<slug>.json` — e.g. `federal/senator.json`
 - `provincial/<slug>.json` — e.g. `provincial/bc.json`
 
-Each write replaces that file. On success the JSON includes `data` (reps array), optional **`diff`** (`added` / `deleted` as rep arrays, **`changed`** as `{ name, first_name, last_name, updated: string[] }`), **`currentSource`**, and **`diffError`** when the YouCount comparison could not run. On error, `status` is `error` and `error` has the message. Persisted records use `gov_level`, `slug`, and `id` in the form `<gov_level>/<slug>`. Older files may still contain `tier`; reads map that to `gov_level`.
+Each write replaces that file. On success the JSON includes `data` (reps array), optional **`diff`** (`added` / `deleted` as rep arrays, **`changed`** as `{ name, first_name, last_name, updated: { field, old, new }[] }`), **`currentSource`**, and **`diffError`** when the YouCount comparison could not run. On error, `status` is `error` and `error` has the message. Persisted records use `gov_level`, `slug`, and `id` in the form `<gov_level>/<slug>`. Older files may still contain `tier`; reads map that to `gov_level`.
 
 The `data/` directory is **gitignored** (see repo `.gitignore`).
 
