@@ -50,7 +50,7 @@ export type MunicipalAggregateDiff = {
 };
 
 export const MUNICIPAL_YOUCOUNT_SOURCE =
-  `${YOUCOUNT_BASE}?gov_level=municipal&province=<province>&district_name=<city>|organization=<slug>`;
+  `${YOUCOUNT_BASE}?gov_level=municipal&province=<province>&organization=<slug>`;
 
 type TaggedRep = Rep & { organization: string };
 
@@ -139,36 +139,14 @@ function filterByAllowedOffices(reps: Rep[], allowed: Set<string>): Rep[] {
   });
 }
 
-function youCountMunicipalUrl(
-  province: string,
-  filter: { district_name?: string; organization?: string },
-): string {
+function youCountMunicipalUrl(province: string, organization: string): string {
   const params = new URLSearchParams({
     gov_level: "municipal",
     province,
+    organization,
     limit: "1000",
   });
-  if (filter.district_name) params.set("district_name", filter.district_name);
-  if (filter.organization) params.set("organization", filter.organization);
   return `${YOUCOUNT_BASE}?${params}`;
-}
-
-function repDedupeKey(rep: Rep): string {
-  if (rep.id != null) return `id:${rep.id}`;
-  return [
-    rep.name,
-    rep.district_name,
-    rep.elected_office,
-    rep.organization ?? "",
-  ].join(" ## ");
-}
-
-function unionReps(...lists: Rep[][]): Rep[] {
-  const byKey = new Map<string, Rep>();
-  for (const rep of lists.flat()) {
-    byKey.set(repDedupeKey(rep), rep);
-  }
-  return [...byKey.values()];
 }
 
 async function fetchYouCountPage(url: string): Promise<Rep[]> {
@@ -178,18 +156,13 @@ async function fetchYouCountPage(url: string): Promise<Rep[]> {
 
 async function fetchYouCountMunicipal(
   province: string,
-  districtName: string,
   organization: string,
 ): Promise<{ total: number; reps: Rep[] }> {
-  const [byDistrict, byOrganizationRaw] = await Promise.all([
-    fetchYouCountPage(youCountMunicipalUrl(province, { district_name: districtName })),
-    fetchYouCountPage(youCountMunicipalUrl(province, { organization })),
-  ]);
-  const byOrganization = byOrganizationRaw.filter(
+  const reps = await fetchYouCountPage(youCountMunicipalUrl(province, organization));
+  const filtered = reps.filter(
     (rep) => rep.organization?.trim() === organization,
   );
-  const reps = unionReps(byDistrict, byOrganization);
-  return { total: reps.length, reps };
+  return { total: filtered.length, reps: filtered };
 }
 
 function tagOrganization(reps: Rep[], organization: string): TaggedRep[] {
@@ -240,8 +213,7 @@ function computeRoleDiff(
     secondaryFields: [...MUNICIPAL_SECONDARY],
     ...(organizationSlug && {
       // Scrape side always has organization = council slug (tagOrganization).
-      // YouCount rows often come from district_name query and may have empty or
-      // generic organization — use slug for identity only; secondary compare keeps raw values.
+      // Use slug for identity matching; secondary compare keeps raw YouCount values.
       matchField: (rep, field) => {
         if (field === "organization") return organizationSlug;
         return readField(rep, field);
@@ -334,7 +306,6 @@ export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregat
   let fetchError: string | null = null;
 
   for (const [slug, { province, reps }] of scrapedByCouncil) {
-    const districtName = inferDistrictName(slug, reps);
     const taggedScrape = tagOrganization(reps, slug);
     const allowedOffices = allowedOfficesFromScrape(reps);
     const { mayors: sMayors, councillors: sCouncillors } = splitByRole(taggedScrape);
@@ -342,7 +313,7 @@ export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregat
     scrapeCouncillors.push(...sCouncillors);
 
     try {
-      const municipalFetch = await fetchYouCountMunicipal(province, districtName, slug);
+      const municipalFetch = await fetchYouCountMunicipal(province, slug);
       const youcountFiltered = filterByAllowedOffices(
         municipalFetch.reps,
         allowedOffices,
