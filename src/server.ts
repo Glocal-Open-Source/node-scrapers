@@ -12,6 +12,11 @@ import {
   refreshMunicipalAggregateDiff,
 } from "./municipal/diff";
 import { normalizeSlug } from "./slug";
+import {
+  getScrapeJobStatus,
+  triggerScrapeAll,
+  triggerScrapeOne,
+} from "./scrapeJobs";
 import { getStoredRun } from "./storage/runStore";
 
 const app = express();
@@ -66,6 +71,39 @@ app.get("/all", (_req, res) => {
       slug: t.slug,
       enabled: t.enabled !== false,
     })),
+  });
+});
+
+/** Background scrape job status (see POST /scrape/all and POST /scrape/:slug). */
+app.get("/scrape/status", (_req, res) => {
+  res.json(getScrapeJobStatus());
+});
+
+/** Run every enabled scraper sequentially in the background. */
+app.post("/scrape/all", (_req, res) => {
+  const result = triggerScrapeAll();
+  if (!result.accepted) {
+    res.status(409).json({ success: false, message: result.message });
+    return;
+  }
+  res.status(202).json({ success: true, message: result.message });
+});
+
+/** Run one scraper by slug in the background. */
+app.post("/scrape/:slug", (req, res) => {
+  const result = triggerScrapeOne(req.params.slug);
+  if ("notFound" in result) {
+    res.status(404).json({ success: false, message: "Unknown scraper" });
+    return;
+  }
+  if (!result.accepted) {
+    res.status(409).json({ success: false, message: result.message });
+    return;
+  }
+  res.status(202).json({
+    success: true,
+    message: result.message,
+    slug: result.slug,
   });
 });
 
