@@ -33,6 +33,26 @@ function getField(rep: Rep, f: string): string {
   return String(v);
 }
 
+/** Fill missing first/last name from `name` (e.g. OpenNorth adds only `name`). */
+function ensureNameParts(rep: Rep): Rep {
+  let first_name = rep.first_name?.trim() ?? "";
+  let last_name = rep.last_name?.trim() ?? "";
+  const name = rep.name?.trim() ?? "";
+
+  if ((!first_name || !last_name) && name) {
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      if (!first_name) first_name = parts.slice(0, -1).join(" ");
+      if (!last_name) last_name = parts[parts.length - 1] ?? "";
+    } else if (parts.length === 1 && !first_name) {
+      first_name = parts[0] ?? "";
+    }
+  }
+
+  const fullName = name || `${first_name} ${last_name}`.trim();
+  return { ...rep, name: fullName, first_name, last_name };
+}
+
 export interface GetDiffParams {
   currentReps: Rep[];
   latestReps: Rep[];
@@ -75,7 +95,8 @@ export function getDiff({
   const currentKeys = new Set(filteredCurrentReps.map(getKey));
   const added = latestReps
     .filter((x) => !currentKeys.has(getKey(x)))
-    .filter((x) => !excludedRepkeys.has(getKey(x)));
+    .filter((x) => !excludedRepkeys.has(getKey(x)))
+    .map(ensureNameParts);
 
   const latestKeys = new Set(latestReps.map(getKey));
   const deleted = filteredCurrentReps.filter((x) => !latestKeys.has(getKey(x)));
