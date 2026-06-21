@@ -6,6 +6,7 @@ import { env } from "./env";
 import type { GovLevel, SyncTarget } from "./interfaces";
 import {
   emptyMunicipalRepDiff,
+  getMunicipalCouncilDiff,
   MUNICIPAL_YOUCOUNT_SOURCE,
   readMunicipalAggregateDiff,
   refreshMunicipalAggregateDiff,
@@ -103,6 +104,20 @@ app.get("/provincial/:slug", async (req, res) => {
   } catch (err) {
     console.error("[scrapers] GET /provincial/:slug", err);
     res.status(500).json({ success: false, message: "Failed to load run" });
+  }
+});
+
+app.get("/municipal/:slug/diff", async (req, res) => {
+  try {
+    const result = await getMunicipalCouncilDiff(req.params.slug);
+    if (!result) {
+      res.status(404).json({ success: false, message: "Unknown municipal council" });
+      return;
+    }
+    res.json(result);
+  } catch (err) {
+    console.error("[scrapers] GET /municipal/:slug/diff", err);
+    res.status(500).json({ success: false, message: "Failed to load council diff" });
   }
 });
 

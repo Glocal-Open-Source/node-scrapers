@@ -6,6 +6,7 @@ import { emptyRepDiff, getDiff, type RepDiff } from "../diff";
 import { http } from "../http";
 import type { Rep } from "../interfaces";
 import { getDataDir, getStoredRun } from "../storage/runStore";
+import { normalizeSlug } from "../slug";
 import { municipalTargets } from "./index";
 
 const YOUCOUNT_BASE = "https://www.youcount.ca/representatives";
@@ -28,6 +29,8 @@ export type MunicipalCouncilStatus = {
   scrapeCount: number;
   diffError: string | null;
   counts: { added: number; deleted: number; changed: number } | null;
+  /** Per-council diff vs YouCount (mayor + councillor roles merged). */
+  diff: RepDiff | null;
 };
 
 export type MunicipalAggregateDiff = {
@@ -74,6 +77,11 @@ function normalizeMunicipalAggregate(
     combined: record.combined ?? empty,
     mayors: { ...record.mayors, diff: record.mayors.diff ?? empty },
     councillors: { ...record.councillors, diff: record.councillors.diff ?? empty },
+    councils: (record.councils ?? []).map((council) => ({
+      ...council,
+      diff: council.diff ?? null,
+      counts: council.counts ?? council.diff?.counts ?? null,
+    })),
   };
 }
 
@@ -214,6 +222,7 @@ async function loadCouncilStatuses(): Promise<MunicipalCouncilStatus[]> {
           scrapeCount: 0,
           diffError: null,
           counts: null,
+          diff: null,
         };
       }
       if (run.status === "error") {
@@ -224,6 +233,7 @@ async function loadCouncilStatuses(): Promise<MunicipalCouncilStatus[]> {
           scrapeCount: 0,
           diffError: run.error,
           counts: null,
+          diff: null,
         };
       }
       return {
@@ -233,19 +243,20 @@ async function loadCouncilStatuses(): Promise<MunicipalCouncilStatus[]> {
         scrapeCount: run.count ?? run.data?.length ?? 0,
         diffError: run.diffError ?? null,
         counts: null,
+        diff: null,
       };
     }),
   );
 }
 
-function attachCouncilCounts(
+function attachCouncilDiffs(
   councils: MunicipalCouncilStatus[],
   councilDiffs: Map<string, RepDiff>,
 ): MunicipalCouncilStatus[] {
   return councils.map((council) => {
     const diff = councilDiffs.get(council.slug);
     if (!diff) return council;
-    return { ...council, counts: diff.counts };
+    return { ...council, diff, counts: diff.counts };
   });
 }
 
@@ -343,8 +354,50 @@ export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregat
     combined: mergeDiffs([mayors.diff, councillors.diff]),
     mayors,
     councillors,
-    councils: attachCouncilCounts(councils, councilDiffs),
+    councils: attachCouncilDiffs(councils, councilDiffs),
   });
+}
+
+export type MunicipalCouncilDiffResponse = {
+  generatedAt: string;
+  gov_level: "municipal";
+  slug: string;
+  status: MunicipalCouncilStatus["status"];
+  finishedAt: string | null;
+  scrapeCount: number;
+  diffError: string | null;
+  currentSource: string;
+  diff: RepDiff;
+};
+
+/** Per-council diff (not the national combined aggregate). */
+export async function getMunicipalCouncilDiff(
+  rawSlug: string,
+): Promise<MunicipalCouncilDiffResponse | null> {
+  const slug = normalizeSlug(rawSlug);
+  if (!Object.values(municipalTargets).some((t) => t.slug === slug)) {
+    return null;
+  }
+
+  let aggregate = await readMunicipalAggregateDiff();
+  if (!aggregate) {
+    aggregate = await refreshMunicipalAggregateDiff();
+  }
+
+  const council = aggregate.councils.find((c) => c.slug === slug);
+  if (!council) return null;
+
+  return {
+    generatedAt: aggregate.generatedAt,
+    gov_level: "municipal",
+    slug,
+    status: council.status,
+    finishedAt: council.finishedAt,
+    scrapeCount: council.scrapeCount,
+    diffError: council.diffError,
+    currentSource: aggregate.currentSource,
+    diff: council.diff ?? emptyMunicipalRepDiff(),
+  };
 }
 
 export function aggregateDiffPath(): string {

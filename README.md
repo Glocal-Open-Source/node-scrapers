@@ -1,6 +1,6 @@
 # @yc/scrapers
 
-TypeScript service that writes **JSON under `data/federal/`, `data/provincial/`, and `data/municipal/`**, exposes **`GET /health`**, **`GET /all`**, **`GET /diff`**, **`GET /federal/:slug`**, **`GET /provincial/:slug`**, and **`GET /municipal/:slug`** (same auth as `@yc/mq` when `API_TUNNEL_SECRET` is set), and provides **CLI commands** to run scrapers (use your platform scheduler—e.g. Dokploy—to run `scrape:all` on a cadence).
+TypeScript service that writes **JSON under `data/federal/`, `data/provincial/`, and `data/municipal/`**, exposes **`GET /health`**, **`GET /all`**, **`GET /diff`**, **`GET /federal/:slug`**, **`GET /provincial/:slug`**, **`GET /municipal/:slug`**, and **`GET /municipal/:slug/diff`** (same auth as `@yc/mq` when `API_TUNNEL_SECRET` is set), and provides **CLI commands** to run scrapers (use your platform scheduler—e.g. Dokploy—to run `scrape:all` on a cadence).
 
 After each **successful** scrape, the service fetches the live YouCount snapshot (`currentUrl`), compares it to the scraped reps (same logic as admin-amplify rep sync), and stores **`currentSource`**, **`diff`**, and **`diffError`** on the same run JSON. **`GET /diff`** returns those embedded diffs for every registered scraper in one response (no per-slug diff routes).
 
@@ -46,7 +46,8 @@ docker compose up --build
 - `GET /diff` — `{ generatedAt, scrapers }` where each row has `gov_level`, `slug`, `status` (`success` | `error` | `missing`), `finishedAt`, `currentSource`, and the embedded `diff` / `diffError` from disk (same fields as on each run file when present)
 - `GET /federal/:slug` — stored run JSON as `{ run }` (`404` if unknown slug or no file yet)
 - `GET /provincial/:slug` — same for provincial scrapers
-- `GET /municipal/:slug` — same for municipal scrapers (e.g. `calgary-city-council`)
+- `GET /municipal/:slug` — stored scrape run JSON as `{ run }` (`404` if unknown slug or no file yet)
+- `GET /municipal/:slug/diff` — per-council diff vs YouCount (`added` / `deleted` / `changed` with matching `counts`; not the national `combined` aggregate)
 
 Example:
 
@@ -57,6 +58,7 @@ curl -s http://127.0.0.1:3101/diff
 curl -s http://127.0.0.1:3101/federal/senator
 curl -s http://127.0.0.1:3101/provincial/bc
 curl -s http://127.0.0.1:3101/municipal/calgary-city-council
+curl -s http://127.0.0.1:3101/municipal/kelowna-city-council/diff
 ```
 
 ## Monorepo scripts
