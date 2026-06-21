@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { isMayorOffice } from "../boundaries/municipal";
+import { normalizeElectedOffice } from "../boundaries";
 import { emptyRepDiff, getDiff, type RepDiff } from "../diff";
 import { http } from "../http";
 import type { Rep } from "../interfaces";
@@ -49,7 +50,7 @@ export type MunicipalAggregateDiff = {
 };
 
 export const MUNICIPAL_YOUCOUNT_SOURCE =
-  `${YOUCOUNT_BASE}?province=<province>&district_name=<city>&elected_office=Mayor|Councillor|Conseiller`;
+  `${YOUCOUNT_BASE}?gov_level=municipal&province=<province>&district_name=<city>`;
 
 type TaggedRep = Rep & { organization: string };
 
@@ -116,17 +117,30 @@ export function inferDistrictName(
   return slugToDistrictGuess(slug);
 }
 
-function councillorOfficeForProvince(province: string): string {
-  return province === "Quebec" ? "Conseiller" : "Councillor";
+function normalizeOffice(office: string | undefined): string {
+  return normalizeElectedOffice(office)?.trim() ?? office?.trim() ?? "";
 }
 
-function youCountUrl(
-  electedOffice: string,
-  province: string,
-  districtName: string,
-): string {
+/** Offices present in the scrape define which YouCount rows are in scope (excludes city staff). */
+function allowedOfficesFromScrape(reps: Rep[]): Set<string> {
+  const allowed = new Set<string>();
+  for (const rep of reps) {
+    const office = normalizeOffice(rep.elected_office);
+    if (office) allowed.add(office);
+  }
+  return allowed;
+}
+
+function filterByAllowedOffices(reps: TaggedRep[], allowed: Set<string>): TaggedRep[] {
+  return reps.filter((rep) => {
+    const office = normalizeOffice(rep.elected_office);
+    return office !== "" && allowed.has(office);
+  });
+}
+
+function youCountMunicipalUrl(province: string, districtName: string): string {
   const params = new URLSearchParams({
-    elected_office: electedOffice,
+    gov_level: "municipal",
     province,
     district_name: districtName,
     limit: "1000",
@@ -134,13 +148,12 @@ function youCountUrl(
   return `${YOUCOUNT_BASE}?${params}`;
 }
 
-async function fetchYouCountRole(
-  electedOffice: string,
+async function fetchYouCountMunicipal(
   province: string,
   districtName: string,
 ): Promise<{ total: number; reps: Rep[] }> {
   const { data } = await http.get<{ objects?: Rep[]; meta?: { total_count?: number } }>(
-    youCountUrl(electedOffice, province, districtName),
+    youCountMunicipalUrl(province, districtName),
   );
   return {
     total: data.meta?.total_count ?? data.objects?.length ?? 0,
@@ -276,26 +289,22 @@ export async function computeMunicipalAggregateDiff(): Promise<MunicipalAggregat
   for (const [slug, { province, reps }] of scrapedByCouncil) {
     const districtName = inferDistrictName(slug, reps);
     const taggedScrape = tagOrganization(reps, slug);
+    const allowedOffices = allowedOfficesFromScrape(reps);
     const { mayors: sMayors, councillors: sCouncillors } = splitByRole(taggedScrape);
     scrapeMayors.push(...sMayors);
     scrapeCouncillors.push(...sCouncillors);
 
     try {
-      const councillorOffice = councillorOfficeForProvince(province);
-      const [mayorFetch, councillorFetch] = await Promise.all([
-        fetchYouCountRole("Mayor", province, districtName),
-        fetchYouCountRole(councillorOffice, province, districtName),
-      ]);
-      const youcountMayorReps = tagOrganization(mayorFetch.reps, slug);
-      const youcountCouncillorReps = tagOrganization(councillorFetch.reps, slug);
-      youcountMayors.push(...youcountMayorReps);
-      youcountCouncillors.push(...youcountCouncillorReps);
+      const municipalFetch = await fetchYouCountMunicipal(province, districtName);
+      const youcountTagged = filterByAllowedOffices(
+        tagOrganization(municipalFetch.reps, slug),
+        allowedOffices,
+      );
+      const { mayors: yMayors, councillors: yCouncillors } = splitByRole(youcountTagged);
+      youcountMayors.push(...yMayors);
+      youcountCouncillors.push(...yCouncillors);
 
-      const councilDiff = mergeDiffs([
-        computeRoleDiff(sMayors, youcountMayorReps),
-        computeRoleDiff(sCouncillors, youcountCouncillorReps),
-      ]);
-      councilDiffs.set(slug, councilDiff);
+      councilDiffs.set(slug, computeRoleDiff(taggedScrape, youcountTagged));
       councilsQueried++;
     } catch (e) {
       fetchError = e instanceof Error ? e.message : String(e);
