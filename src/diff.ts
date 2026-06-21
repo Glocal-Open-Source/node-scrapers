@@ -58,6 +58,8 @@ export interface GetDiffParams {
   latestReps: Rep[];
   primaryFields?: string[];
   secondaryFields?: string[];
+  /** Optional value used for primary-key matching only (secondary compare uses raw fields). */
+  matchField?: (rep: Rep, field: string) => string;
 }
 
 export function emptyRepDiff(
@@ -82,11 +84,15 @@ export function getDiff({
   latestReps,
   primaryFields = ["name", "district_name"],
   secondaryFields = ["email", "party_name"],
+  matchField,
 }: GetDiffParams): RepDiff {
   const filteredCurrentReps = currentReps.filter((x) => !!x.related?.boundary_url);
 
+  const keyField = (rep: Rep, f: string) =>
+    matchField ? matchField(rep, f) : getField(rep, f);
+
   const getKey = (rep: Rep) =>
-    primaryFields.map((f) => `${f}: ${getField(rep, f)}`).join(" ## ");
+    primaryFields.map((f) => `${f}: ${keyField(rep, f)}`).join(" ## ");
 
   const excludedRepkeys = new Set(
     currentReps.filter((x) => !x.related?.boundary_url).map(getKey),
