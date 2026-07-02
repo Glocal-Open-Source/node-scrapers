@@ -59,6 +59,7 @@ const MUNICIPAL_SECONDARY = [
   "email",
   "party_name",
   "district_name",
+  "boundary",
   "elected_office",
   "organization",
 ] as const;
