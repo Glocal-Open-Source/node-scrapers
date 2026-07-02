@@ -8,6 +8,7 @@ import { http } from "../http";
 import type { Rep } from "../interfaces";
 import { getDataDir, getStoredRun } from "../storage/runStore";
 import { normalizeSlug } from "../slug";
+import { normalizeRepBoundary } from "../util/boundary";
 import { municipalTargets } from "./index";
 
 const YOUCOUNT_BASE = "https://www.youcount.ca/representatives";
@@ -152,7 +153,7 @@ function youCountMunicipalUrl(province: string, organization: string): string {
 
 async function fetchYouCountPage(url: string): Promise<Rep[]> {
   const { data } = await http.get<{ objects?: Rep[] }>(url);
-  return data.objects ?? [];
+  return (data.objects ?? []).map(normalizeRepBoundary);
 }
 
 async function fetchYouCountMunicipal(

@@ -5,6 +5,7 @@ import type { Rep, SyncTarget } from "./interfaces";
 import { refreshMunicipalAggregateDiff } from "./municipal/diff";
 import { registry } from "./registry";
 import { writeRunError, writeRunSuccess } from "./storage/runStore";
+import { normalizeRepBoundary } from "./util/boundary";
 import { normalizeRepHonorifics } from "./util/repName";
 
 export async function runOne(target: SyncTarget): Promise<void> {
@@ -24,7 +25,7 @@ export async function runOne(target: SyncTarget): Promise<void> {
     if (currentUrl) {
       try {
         const { data } = await http.get<{ objects?: Rep[] }>(currentUrl);
-        const currentReps = data?.objects ?? [];
+        const currentReps = (data?.objects ?? []).map(normalizeRepBoundary);
         diff = getDiff({
           currentReps,
           latestReps: reps,

@@ -144,7 +144,13 @@ function withBoundaries(
       return {
         ...rep,
         elected_office: normalizeElectedOffice(rep.elected_office),
-        ...(boundary && { boundary }),
+        ...(boundary && {
+          boundary,
+          related: {
+            ...rep.related,
+            boundary_url: `/boundaries/${boundary}/`,
+          },
+        }),
       };
     });
   };

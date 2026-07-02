@@ -96,7 +96,14 @@ export function withBoundary(
       return {
         ...rep,
         elected_office: normalizeElectedOffice(rep.elected_office),
-        ...(resolved && { boundary: resolved.boundary, district_name: resolved.district_name }),
+        ...(resolved && {
+          boundary: resolved.boundary,
+          district_name: resolved.district_name,
+          related: {
+            ...rep.related,
+            boundary_url: `/boundaries/${resolved.boundary}/`,
+          },
+        }),
       };
     });
   };
