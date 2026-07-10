@@ -39,7 +39,7 @@ export const DEFAULTS: Record<string, SyncTarget> = {
     slug: "ab",
     currentUrl:
       "https://www.youcount.ca/representatives?province=Alberta&elected_office=MLA&limit=1000",
-    opennorthUrl: "https://scrapers.herokuapp.com/represent/ca_ab/",
+    opennorthUrl: "https://python-scrapers.youcount.ca/represent/ca_ab/",
     elected_office: "MLA",
     province: "Alberta",
     enabled: true,
@@ -59,7 +59,7 @@ export const DEFAULTS: Record<string, SyncTarget> = {
     slug: "mb",
     currentUrl:
       "https://www.youcount.ca/representatives?province=Manitoba&elected_office=MLA&limit=1000",
-    opennorthUrl: "https://scrapers.herokuapp.com/represent/ca_mb/",
+    opennorthUrl: "https://python-scrapers.youcount.ca/represent/ca_mb/",
     elected_office: "MLA",
     province: "Manitoba",
     enabled: true,
@@ -89,7 +89,7 @@ export const DEFAULTS: Record<string, SyncTarget> = {
     slug: "ns",
     currentUrl:
       "https://www.youcount.ca/representatives?province=Nova Scotia&elected_office=MLA&limit=1000",
-    opennorthUrl: "https://scrapers.herokuapp.com/represent/ca_ns/",
+    opennorthUrl: "https://python-scrapers.youcount.ca/represent/ca_ns/",
     elected_office: "MLA",
     province: "Nova Scotia",
     enabled: true,
@@ -119,7 +119,7 @@ export const DEFAULTS: Record<string, SyncTarget> = {
     slug: "on",
     currentUrl:
       "https://www.youcount.ca/representatives?province=Ontario&elected_office=MPP&limit=1000",
-    opennorthUrl: "https://scrapers.herokuapp.com/represent/ca_on/",
+    opennorthUrl: "https://python-scrapers.youcount.ca/represent/ca_on/",
     elected_office: "MPP",
     province: "Ontario",
     enabled: true,
@@ -129,7 +129,7 @@ export const DEFAULTS: Record<string, SyncTarget> = {
     slug: "pei",
     currentUrl:
       "https://www.youcount.ca/representatives?province=Prince Edward Island&elected_office=MLA&limit=1000",
-    opennorthUrl: "https://scrapers.herokuapp.com/represent/ca_pe/",
+    opennorthUrl: "https://python-scrapers.youcount.ca/represent/ca_pe/",
     elected_office: "MLA",
     province: "Prince Edward Island",
     enabled: true,
@@ -139,7 +139,7 @@ export const DEFAULTS: Record<string, SyncTarget> = {
     slug: "qc",
     currentUrl:
       "https://www.youcount.ca/representatives?province=Quebec&elected_office=MNA&limit=1000",
-    opennorthUrl: "https://scrapers.herokuapp.com/represent/ca_qc/",
+    opennorthUrl: "https://python-scrapers.youcount.ca/represent/ca_qc/",
     elected_office: "MNA",
     province: "Quebec",
     enabled: true,

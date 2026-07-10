@@ -1,6 +1,6 @@
 import { createOpenNorthScraper } from "./opennorth";
 
-const URL = "https://scrapers.herokuapp.com/represent/ca_ns/";
+const URL = "https://python-scrapers.youcount.ca/represent/ca_ns/";
 
 export const scrapeNsMla = createOpenNorthScraper(URL, {
   province: "Nova Scotia",
