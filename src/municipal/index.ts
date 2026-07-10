@@ -40,6 +40,7 @@ const SETS: { slug: string; herokSlug: string; province: string }[] = [
   { slug: "langley-city-council", herokSlug: "ca_bc_langley_city", province: "British Columbia" },
   { slug: "langley-township-council", herokSlug: "ca_bc_langley", province: "British Columbia" },
   { slug: "maple-ridge-city-council", herokSlug: "ca_bc_maple_ridge", province: "British Columbia" },
+  { slug: "mission-city-council", herokSlug: "ca_bc_mission", province: "British Columbia" },
   { slug: "nanaimo-city-council", herokSlug: "ca_bc_nanaimo", province: "British Columbia" },
   { slug: "new-westminster-city-council", herokSlug: "ca_bc_new_westminster", province: "British Columbia" },
   { slug: "north-vancouver-city-council", herokSlug: "ca_bc_north_vancouver_city", province: "British Columbia" },
@@ -67,6 +68,7 @@ const SETS: { slug: string; herokSlug: string; province: string }[] = [
   { slug: "moncton-city-council", herokSlug: "ca_nb_moncton", province: "New Brunswick" },
   { slug: "saint-john-city-council", herokSlug: "ca_nb_saint_john", province: "New Brunswick" },
   // Newfoundland and Labrador
+  { slug: "conception-bay-south-town-council", herokSlug: "ca_nl_conception_bay_south", province: "Newfoundland and Labrador" },
   { slug: "st-johns-city-council", herokSlug: "ca_nl_st_john_s", province: "Newfoundland and Labrador" },
   // Northwest Territories
   { slug: "yellowknife-city-council", herokSlug: "ca_nt_yellowknife", province: "Northwest Territories" },
@@ -95,6 +97,7 @@ const SETS: { slug: string; herokSlug: string; province: string }[] = [
   { slug: "grimsby-town-council", herokSlug: "ca_on_grimsby", province: "Ontario" },
   { slug: "guelph-city-council", herokSlug: "ca_on_guelph", province: "Ontario" },
   { slug: "haldimand-county-council", herokSlug: "ca_on_haldimand_county", province: "Ontario" },
+  { slug: "halton-hills-town-council", herokSlug: "ca_on_halton_hills", province: "Ontario" },
   { slug: "hamilton-city-council", herokSlug: "ca_on_hamilton", province: "Ontario" },
   { slug: "huron-county-council", herokSlug: "ca_on_huron", province: "Ontario" },
   { slug: "innisfil-town-council", herokSlug: "ca_on_innisfil", province: "Ontario" },
@@ -129,6 +132,7 @@ const SETS: { slug: string; herokSlug: string; province: string }[] = [
   { slug: "sarnia-city-council", herokSlug: "ca_on_sarnia", province: "Ontario" },
   { slug: "sault-ste-marie-city-council", herokSlug: "ca_on_sault_ste_marie", province: "Ontario" },
   { slug: "st-catharines-city-council", herokSlug: "ca_on_st_catharines", province: "Ontario" },
+  { slug: "st-thomas-city-council", herokSlug: "ca_on_st_thomas", province: "Ontario" },
   { slug: "stratford-city-council", herokSlug: "ca_on_stratford", province: "Ontario" },
   { slug: "thunder-bay-city-council", herokSlug: "ca_on_thunder_bay", province: "Ontario" },
   { slug: "timmins-city-council", herokSlug: "ca_on_timmins", province: "Ontario" },
@@ -152,6 +156,7 @@ const SETS: { slug: string; herokSlug: string; province: string }[] = [
   // Quebec
   { slug: "conseil-municipal-de-alma", herokSlug: "ca_qc_alma", province: "Quebec" },
   { slug: "conseil-municipal-de-beaconsfield", herokSlug: "ca_qc_beaconsfield", province: "Quebec" },
+  { slug: "conseil-municipal-de-blainville", herokSlug: "ca_qc_blainville", province: "Quebec" },
   { slug: "conseil-municipal-de-boisbriand", herokSlug: "ca_qc_boisbriand", province: "Quebec" },
   { slug: "conseil-municipal-de-brossard", herokSlug: "ca_qc_brossard", province: "Quebec" },
   { slug: "conseil-municipal-de-cote-saint-luc", herokSlug: "ca_qc_cote_saint_luc", province: "Quebec" },
@@ -166,6 +171,7 @@ const SETS: { slug: string; herokSlug: string; province: string }[] = [
   { slug: "conseil-municipal-de-longueuil", herokSlug: "ca_qc_longueuil", province: "Quebec" },
   { slug: "conseil-municipal-de-magog", herokSlug: "ca_qc_magog", province: "Quebec" },
   { slug: "conseil-municipal-de-mercier", herokSlug: "ca_qc_mercier", province: "Quebec" },
+  { slug: "conseil-municipal-de-mirabel", herokSlug: "ca_qc_mirabel", province: "Quebec" },
   { slug: "conseil-municipal-de-montreal", herokSlug: "ca_qc_montreal", province: "Quebec" },
   { slug: "conseil-municipal-de-montreal-est", herokSlug: "ca_qc_montreal_est", province: "Quebec" },
   { slug: "conseil-municipal-de-pointe-claire", herokSlug: "ca_qc_pointe_claire", province: "Quebec" },
@@ -191,11 +197,14 @@ const SETS: { slug: string; herokSlug: string; province: string }[] = [
   { slug: "conseil-municipal-de-thetford-mines", herokSlug: "ca_qc_thetford_mines", province: "Quebec" },
   { slug: "conseil-municipal-de-trois-rivieres", herokSlug: "ca_qc_trois_rivieres", province: "Quebec" },
   { slug: "conseil-municipal-de-val-dor", herokSlug: "ca_qc_val_dor", province: "Quebec" },
+  { slug: "conseil-municipal-de-vaudreuil-dorion", herokSlug: "ca_qc_vaudreuil_dorion", province: "Quebec" },
   { slug: "conseil-municipal-de-victoriaville", herokSlug: "ca_qc_victoriaville", province: "Quebec" },
   { slug: "conseil-municipal-de-westmount", herokSlug: "ca_qc_westmount", province: "Quebec" },
   // Saskatchewan
   { slug: "regina-city-council", herokSlug: "ca_sk_regina", province: "Saskatchewan" },
   { slug: "saskatoon-city-council", herokSlug: "ca_sk_saskatoon", province: "Saskatchewan" },
+  // Yukon
+  { slug: "whitehorse-city-council", herokSlug: "ca_yt_whitehorse", province: "Yukon" },
 ];
 
 function withBoundaries(

@@ -149,6 +149,10 @@ const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>> = {
     mayor: "census-subdivisions/5915075",
     ward: () => null,
   },
+  "mission-city-council": {
+    mayor: "census-subdivisions/5909056",
+    ward: () => null,
+  },
   "nanaimo-city-council": {
     mayor: "census-subdivisions/5921007",
     ward: () => null,
@@ -248,6 +252,10 @@ const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>> = {
     ward: wardByName("saint-john-wards"),
   },
   // Newfoundland and Labrador
+  "conception-bay-south-town-council": {
+    mayor: "census-subdivisions/1001485",
+    ward: () => null,
+  },
   "st-johns-city-council": {
     mayor: "census-subdivisions/1001519",
     ward: wardByName("st-johns-wards"),
@@ -347,6 +355,10 @@ const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>> = {
   "haldimand-county-council": {
     mayor: "census-subdivisions/3528018",
     ward: wardByName("haldimand-county-wards"),
+  },
+  "halton-hills-town-council": {
+    mayor: "census-subdivisions/3524015",
+    ward: () => null,
   },
   "hamilton-city-council": {
     mayor: "census-subdivisions/3525005",
@@ -485,6 +497,10 @@ const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>> = {
     mayor: "census-subdivisions/3526053",
     ward: wardByName("st-catharines-wards"),
   },
+  "st-thomas-city-council": {
+    mayor: "census-subdivisions/3534021",
+    ward: () => null,
+  },
   "stratford-city-council": {
     mayor: "census-subdivisions/3531011",
     ward: () => null,
@@ -571,6 +587,10 @@ const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>> = {
     mayor: "census-subdivisions/2466107",
     ward: wardByName("beaconsfield-districts"),
   },
+  "conseil-municipal-de-blainville": {
+    mayor: "census-subdivisions/2473015",
+    ward: () => null,
+  },
   "conseil-municipal-de-boisbriand": {
     mayor: "census-subdivisions/2473005",
     ward: () => null,
@@ -626,6 +646,10 @@ const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>> = {
   "conseil-municipal-de-mercier": {
     mayor: "census-subdivisions/2467045",
     ward: wardByName("mercier-districts"),
+  },
+  "conseil-municipal-de-mirabel": {
+    mayor: "census-subdivisions/2474005",
+    ward: () => null,
   },
   "conseil-municipal-de-montreal-est": {
     mayor: "census-subdivisions/2466007",
@@ -727,6 +751,10 @@ const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>> = {
     mayor: "census-subdivisions/2489008",
     ward: () => null,
   },
+  "conseil-municipal-de-vaudreuil-dorion": {
+    mayor: "census-subdivisions/2471083",
+    ward: () => null,
+  },
   "conseil-municipal-de-victoriaville": {
     mayor: "census-subdivisions/2439062",
     ward: () => null,
@@ -743,6 +771,11 @@ const BOUNDARY_OVERRIDES: Partial<Record<string, Partial<BoundaryConfig>>> = {
   "saskatoon-city-council": {
     mayor: "census-subdivisions/4711066",
     ward: wardByName("saskatoon-wards"),
+  },
+  // Yukon
+  "whitehorse-city-council": {
+    mayor: "census-subdivisions/6001009",
+    ward: () => null,
   },
 };
 
