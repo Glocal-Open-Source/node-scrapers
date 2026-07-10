@@ -97,7 +97,14 @@ export function withBoundary(
         ...rep,
         elected_office: normalizeElectedOffice(rep.elected_office),
         gender: rep.gender === "M" ? "Male" : rep.gender === "F" ? "Female" : rep.gender,
-        ...(resolved && { boundary: resolved.boundary, district_name: resolved.district_name }),
+        ...(resolved && {
+          boundary: resolved.boundary,
+          district_name: resolved.district_name,
+          related: {
+            ...rep.related,
+            boundary_url: `/boundaries/${resolved.boundary}/`,
+          },
+        }),
       };
     });
   };

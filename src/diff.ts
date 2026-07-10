@@ -1,12 +1,20 @@
 import type { Rep } from "./interfaces";
 
+export interface RepDiffFieldChange {
+  field: string;
+  old: string;
+  new: string;
+}
+
 export interface RepDiffChanged {
+  /** YouCount representative id (from current snapshot). */
+  id?: number;
   name: string;
   first_name: string;
   last_name: string;
-  updated: string[];
-  /** Extra primary-key fields (e.g. `council`, `district_name`) when used for matching. */
-  [key: string]: string | string[];
+  updated: RepDiffFieldChange[];
+  /** Extra primary-key fields (e.g. `organization`, `district_name`) when used for matching. */
+  [key: string]: string | RepDiffFieldChange[] | number | undefined;
 }
 
 export interface RepDiff {
@@ -25,11 +33,49 @@ function getField(rep: Rep, f: string): string {
   return String(v);
 }
 
+/** Fill missing first/last name from `name` (e.g. OpenNorth adds only `name`). */
+function ensureNameParts(rep: Rep): Rep {
+  let first_name = rep.first_name?.trim() ?? "";
+  let last_name = rep.last_name?.trim() ?? "";
+  const name = rep.name?.trim() ?? "";
+
+  if ((!first_name || !last_name) && name) {
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      if (!first_name) first_name = parts.slice(0, -1).join(" ");
+      if (!last_name) last_name = parts[parts.length - 1] ?? "";
+    } else if (parts.length === 1 && !first_name) {
+      first_name = parts[0] ?? "";
+    }
+  }
+
+  const fullName = name || `${first_name} ${last_name}`.trim();
+  return { ...rep, name: fullName, first_name, last_name };
+}
+
 export interface GetDiffParams {
   currentReps: Rep[];
   latestReps: Rep[];
   primaryFields?: string[];
   secondaryFields?: string[];
+  /** Optional value used for primary-key matching only (secondary compare uses raw fields). */
+  matchField?: (rep: Rep, field: string) => string;
+}
+
+export function emptyRepDiff(
+  fields: { primaryFields?: string[]; secondaryFields?: string[] } = {},
+): RepDiff {
+  const primaryFields = fields.primaryFields ?? ["name", "district_name"];
+  const secondaryFields = fields.secondaryFields ?? ["email", "party_name"];
+  return {
+    added: [],
+    deleted: [],
+    changed: [],
+    counts: { added: 0, deleted: 0, changed: 0 },
+    primaryFields,
+    secondaryFields,
+    date: new Date().toISOString(),
+  };
 }
 
 /** Ported from admin-amplify `rep-sync/utils/diff.ts`; returns arrays (not JSON strings). */
@@ -38,11 +84,15 @@ export function getDiff({
   latestReps,
   primaryFields = ["name", "district_name"],
   secondaryFields = ["email", "party_name"],
+  matchField,
 }: GetDiffParams): RepDiff {
   const filteredCurrentReps = currentReps.filter((x) => !!x.related?.boundary_url);
 
+  const keyField = (rep: Rep, f: string) =>
+    matchField ? matchField(rep, f) : getField(rep, f);
+
   const getKey = (rep: Rep) =>
-    primaryFields.map((f) => `${f}: ${getField(rep, f)}`).join(" ## ");
+    primaryFields.map((f) => `${f}: ${keyField(rep, f)}`).join(" ## ");
 
   const excludedRepkeys = new Set(
     currentReps.filter((x) => !x.related?.boundary_url).map(getKey),
@@ -51,7 +101,8 @@ export function getDiff({
   const currentKeys = new Set(filteredCurrentReps.map(getKey));
   const added = latestReps
     .filter((x) => !currentKeys.has(getKey(x)))
-    .filter((x) => !excludedRepkeys.has(getKey(x)));
+    .filter((x) => !excludedRepkeys.has(getKey(x)))
+    .map(ensureNameParts);
 
   const latestKeys = new Set(latestReps.map(getKey));
   const deleted = filteredCurrentReps.filter((x) => !latestKeys.has(getKey(x)));
@@ -85,19 +136,17 @@ export function getDiff({
       );
       continue;
     }
-    const updated: string[] = [];
+    const updated: RepDiffFieldChange[] = [];
     for (const f of secondaryFields) {
-      if (
-        (getField(currRep, f) || "").toLowerCase() !==
-        (getField(newRep, f) || "").toLowerCase()
-      ) {
-        updated.push(
-          `${f}: [old]: ${getField(currRep, f)}, [new]: ${getField(newRep, f)}`,
-        );
+      const oldVal = getField(currRep, f);
+      const newVal = getField(newRep, f);
+      if ((oldVal || "").toLowerCase() !== (newVal || "").toLowerCase()) {
+        updated.push({ field: f, old: oldVal, new: newVal });
       }
     }
     if (updated.length > 0) {
       const entry: RepDiffChanged = {
+        ...(currRep.id != null ? { id: currRep.id } : {}),
         name: currRep.name,
         first_name: currRep.first_name,
         last_name: currRep.last_name,

@@ -122,3 +122,24 @@ export async function getStoredRun(
 ): Promise<ScraperRun | null> {
   return readRunFromDisk(govLevel, normalizeSlug(slug));
 }
+
+/** Counts `*.json` run files under `DATA_DIR` (excludes municipal `_aggregate-diff.json`). */
+export async function countStoredRunFiles(): Promise<number> {
+  const root = getDataDir();
+  let count = 0;
+  for (const level of ["federal", "provincial", "municipal"] as const) {
+    const dir = path.join(root, level);
+    let entries: string[];
+    try {
+      entries = await fs.readdir(dir);
+    } catch (e) {
+      const code = (e as NodeJS.ErrnoException).code;
+      if (code === "ENOENT") continue;
+      throw e;
+    }
+    for (const name of entries) {
+      if (name.endsWith(".json") && name !== "_aggregate-diff.json") count++;
+    }
+  }
+  return count;
+}

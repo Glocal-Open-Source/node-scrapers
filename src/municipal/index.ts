@@ -145,7 +145,13 @@ function withBoundaries(
         ...rep,
         elected_office: normalizeElectedOffice(rep.elected_office),
         gender: rep.gender === "M" ? "Male" : rep.gender === "F" ? "Female" : rep.gender,
-        ...(boundary && { boundary }),
+        ...(boundary && {
+          boundary,
+          related: {
+            ...rep.related,
+            boundary_url: `/boundaries/${boundary}/`,
+          },
+        }),
       };
     });
   };
@@ -153,9 +159,15 @@ function withBoundaries(
 
 export const municipalRegistry: Record<string, () => Promise<Rep[]>> =
   Object.fromEntries(
-    SETS.map(({ slug, herokSlug }) => [
+    SETS.map(({ slug, herokSlug, province }) => [
       slug,
-      withBoundaries(slug, createOpenNorthScraper(`${BASE}${herokSlug}/`)),
+      withBoundaries(
+        slug,
+        createOpenNorthScraper(`${BASE}${herokSlug}/`, {
+          province,
+          gov_level: "municipal",
+        }),
+      ),
     ]),
   );
 

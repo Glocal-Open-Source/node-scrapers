@@ -4,7 +4,6 @@ export interface WardRep {
   elected_office?: string;
   district_name: string;
   district_id?: string;
-  personal_url?: string | null;
   boundary_url?: string;
 }
 

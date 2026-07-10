@@ -5,11 +5,18 @@ import { DEFAULTS } from "./constants";
 import { env } from "./env";
 import type { GovLevel, SyncTarget } from "./interfaces";
 import {
+  emptyMunicipalRepDiff,
+  getMunicipalCouncilDiff,
   MUNICIPAL_YOUCOUNT_SOURCE,
   readMunicipalAggregateDiff,
   refreshMunicipalAggregateDiff,
 } from "./municipal/diff";
 import { normalizeSlug } from "./slug";
+import {
+  getScrapeJobStatus,
+  triggerScrapeAll,
+  triggerScrapeOne,
+} from "./scrapeJobs";
 import { getStoredRun } from "./storage/runStore";
 
 const app = express();
@@ -56,7 +63,7 @@ function targetFor(govLevel: GovLevel, slug: string): SyncTarget | undefined {
   );
 }
 
-/** All registered scrapers (`gov_level` + `slug` for `GET /federal/...` and `GET /provincial/...`). */
+/** All registered scrapers (`gov_level` + `slug` for per-tier run routes). */
 app.get("/all", (_req, res) => {
   res.json({
     scrapers: Object.values(DEFAULTS).map((t) => ({
@@ -64,6 +71,39 @@ app.get("/all", (_req, res) => {
       slug: t.slug,
       enabled: t.enabled !== false,
     })),
+  });
+});
+
+/** Background scrape job status (see POST /scrape/all and POST /scrape/:slug). */
+app.get("/scrape/status", (_req, res) => {
+  res.json(getScrapeJobStatus());
+});
+
+/** Run every enabled scraper sequentially in the background. */
+app.post("/scrape/all", (_req, res) => {
+  const result = triggerScrapeAll();
+  if (!result.accepted) {
+    res.status(409).json({ success: false, message: result.message });
+    return;
+  }
+  res.status(202).json({ success: true, message: result.message });
+});
+
+/** Run one scraper by slug in the background. */
+app.post("/scrape/:slug", (req, res) => {
+  const result = triggerScrapeOne(req.params.slug);
+  if ("notFound" in result) {
+    res.status(404).json({ success: false, message: "Unknown scraper" });
+    return;
+  }
+  if (!result.accepted) {
+    res.status(409).json({ success: false, message: result.message });
+    return;
+  }
+  res.status(202).json({
+    success: true,
+    message: result.message,
+    slug: result.slug,
   });
 });
 
@@ -101,6 +141,29 @@ app.get("/provincial/:slug", async (req, res) => {
     await loadRun(res, "provincial", req.params.slug);
   } catch (err) {
     console.error("[scrapers] GET /provincial/:slug", err);
+    res.status(500).json({ success: false, message: "Failed to load run" });
+  }
+});
+
+app.get("/municipal/:slug/diff", async (req, res) => {
+  try {
+    const result = await getMunicipalCouncilDiff(req.params.slug);
+    if (!result) {
+      res.status(404).json({ success: false, message: "Unknown municipal council" });
+      return;
+    }
+    res.json(result);
+  } catch (err) {
+    console.error("[scrapers] GET /municipal/:slug/diff", err);
+    res.status(500).json({ success: false, message: "Failed to load council diff" });
+  }
+});
+
+app.get("/municipal/:slug", async (req, res) => {
+  try {
+    await loadRun(res, "municipal", req.params.slug);
+  } catch (err) {
+    console.error("[scrapers] GET /municipal/:slug", err);
     res.status(500).json({ success: false, message: "Failed to load run" });
   }
 });
@@ -162,7 +225,7 @@ app.get("/diff", async (_req, res) => {
           generatedAt: new Date().toISOString(),
           scope: { councils: 0, councilsWithData: 0, councilsQueried: 0 },
           currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
-          combined: null,
+          combined: emptyMunicipalRepDiff(),
           councils: [],
           mayors: {
             status: "error",
@@ -170,7 +233,7 @@ app.get("/diff", async (_req, res) => {
             youcountCount: 0,
             councilsQueried: 0,
             currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
-            diff: null,
+            diff: emptyMunicipalRepDiff(),
             diffError: message,
           },
           councillors: {
@@ -179,7 +242,7 @@ app.get("/diff", async (_req, res) => {
             youcountCount: 0,
             councilsQueried: 0,
             currentSource: MUNICIPAL_YOUCOUNT_SOURCE,
-            diff: null,
+            diff: emptyMunicipalRepDiff(),
             diffError: message,
           },
         };
