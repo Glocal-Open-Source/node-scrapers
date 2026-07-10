@@ -48,5 +48,6 @@ export interface Rep {
   quick_links?: QuickLink[];
   facebook?: string;
   twitter?: string;
+  gender?: string | null;
   boundary?: string;
 }

@@ -144,6 +144,7 @@ function withBoundaries(
       return {
         ...rep,
         elected_office: normalizeElectedOffice(rep.elected_office),
+        gender: rep.gender === "M" ? "Male" : rep.gender === "F" ? "Female" : rep.gender,
         ...(boundary && { boundary }),
       };
     });
