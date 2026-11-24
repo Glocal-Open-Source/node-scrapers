@@ -3,6 +3,47 @@ import { http } from "../http";
 
 const GRAPHQL_URL = "https://lims.leg.bc.ca/graphql";
 
+const ORDINAL_SUFFIX: Record<string, string> = {
+  st: "st",
+  nd: "nd",
+  rd: "rd",
+  th: "th",
+};
+
+function parliamentMembersPath(number: number, annotation: string): string {
+  const suffix = ORDINAL_SUFFIX[annotation] ?? annotation;
+  return `${number}${suffix}-Parliament`;
+}
+
+async function fetchParliamentMembersPath(parliamentId: number): Promise<string> {
+  const { data } = await http.post<{
+    data?: { parliamentById?: { number?: number; annotation?: string | null } };
+  }>(
+    GRAPHQL_URL,
+    {
+      operationName: "GetParliament",
+      variables: { id: parliamentId },
+      query: `query GetParliament($id: Int!) {
+        parliamentById(id: $id) {
+          number
+          annotation
+        }
+      }`,
+    },
+    { headers: { "Content-Type": "application/json" } },
+  );
+
+  const parliament = data.data?.parliamentById;
+  const number = parliament?.number;
+  const annotation = parliament?.annotation?.trim();
+  if (number == null || !annotation) {
+    throw new Error(
+      `BC GraphQL: missing parliamentById for parliamentId=${parliamentId}`,
+    );
+  }
+  return parliamentMembersPath(number, annotation);
+}
+
 function buildPayload(parliamentId: number) {
   return {
     operationName: "GetAllMLAs",
@@ -56,7 +97,8 @@ function buildPayload(parliamentId: number) {
 
 /** BC MLAs via LIMS GraphQL (ported from admin-amplify `repsScrapperFn`). */
 export async function scrapeBcMla(): Promise<Rep[]> {
-  const parliamentId = Number(process.env.BC_PARLIAMENT_ID ?? "43");
+  const parliamentId = Number(process.env.BC_PARLIAMENT_ID ?? "76");
+  const membersPath = await fetchParliamentMembersPath(parliamentId);
   const { data } = await http.post<{
     data?: {
       allMemberParliaments?: {
@@ -105,7 +147,7 @@ export async function scrapeBcMla(): Promise<Rep[]> {
       quick_links: [
         {
           title: "Official Website",
-          url: `https://www.leg.bc.ca/members/43rd-Parliament/${encodeURIComponent(slug)}`,
+          url: `https://www.leg.bc.ca/members/${membersPath}/${encodeURIComponent(slug)}`,
         },
       ],
       bio: "",
