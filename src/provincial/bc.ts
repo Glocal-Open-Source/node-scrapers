@@ -97,6 +97,7 @@ function buildPayload(parliamentId: number) {
 
 /** BC MLAs via LIMS GraphQL (ported from admin-amplify `repsScrapperFn`). */
 export async function scrapeBcMla(): Promise<Rep[]> {
+  // LIMS Parliament.id (default 76 = 44th Parliament), not the ordinal number 44.
   const parliamentId = Number(process.env.BC_PARLIAMENT_ID ?? "76");
   const membersPath = await fetchParliamentMembersPath(parliamentId);
   const { data } = await http.post<{
